@@ -99,6 +99,47 @@ pad_input_message(const sycl::uchar* __restrict in,
   *(out + 63) = 0b01000000;
 }
 
+// Given input message in terms of SHA1 words ( note, each word is of 32 -bit
+// width ) this function pads input such that a SHA1 message block ( 16 message
+// words ) is returned, which will be consumed into hash state for producing 20
+// -bytes output ( in next step )
+//
+// Note, this function is almost same as 👆 `pad_input_message`, just that
+// instead of working with byte arrays, this function operates on SHA1 message
+// words ( 32 -bit wide )
+//
+// I plan to use this function when computing intermediate nodes ( other than
+// those just above leaf nodes ) of Binary Merkle Tree
+void
+pad_input_message(const sycl::uint* __restrict in,
+                  sycl::uint* const __restrict out)
+{
+  // attempt to parallelize copying of input to output word array
+  //
+  // copies first 10 -words as it's
+  //
+  // note, this loop will be partially unrolled
+#pragma unroll 10
+  for (size_t i = 0; i < 10; i++) {
+    *(out + i) = *(in + i);
+  }
+
+  constexpr size_t offset = 10;
+
+  // then set 11 -th word, as defined in sha1 specification
+  *(out + offset) = 0b10000000u << 24;
+
+  // fully parallelize execution of this loop
+#pragma unroll 4
+  for (size_t i = 1; i < 5; i++) {
+    *(out + offset + i) = 0;
+  }
+
+  // set last word to length of input ( in terms of bits )
+  // which is 320 -bit
+  *(out + 15) = 0 | 0b00000001u << 8 | 0b01000000u << 0;
+}
+
 // Given 512 -bit wide input message block ( read 64 -bytes )
 // this function takes each of four consecutive bytes ( in big-endian order )
 // and produces sixteen 32 -bit message words
