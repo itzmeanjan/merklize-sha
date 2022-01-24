@@ -4,6 +4,18 @@
 
 namespace sha1 {
 
+// SHA1 specific input/ output width constants, taken from
+// section 1's figure 1 of Secure Hash Standard
+// http://dx.doi.org/10.6028/NIST.FIPS.180-4
+constexpr size_t IN_LEN_BITS = 320;
+constexpr size_t IN_LEN_BYTES = 40;
+
+constexpr size_t OUT_LEN_BITS = IN_LEN_BITS >> 1;
+constexpr size_t OUT_LEN_BYTES = IN_LEN_BYTES >> 1;
+
+constexpr size_t WORD_SIZE_BITS = 32;
+constexpr size_t WORD_SIZE_BYTES = 4;
+
 // See section 4.2.1 of Secure Hash Standard
 // http://dx.doi.org/10.6028/NIST.FIPS.180-4
 //

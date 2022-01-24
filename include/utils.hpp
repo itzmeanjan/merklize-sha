@@ -24,3 +24,18 @@ rotl(sycl::uint x, size_t n)
 {
   return (x << n) | (x >> (32 - n));
 }
+
+// Profile execution time of some command, whose submission resulted into
+// provided SYCL event
+//
+// Ensure that queue has profiling enabled, otherwise this function should panic
+inline sycl::cl_ulong
+time_event(sycl::event& evt)
+{
+  sycl::cl_ulong start =
+    evt.get_profiling_info<sycl::info::event_profiling::command_start>();
+  sycl::cl_ulong end =
+    evt.get_profiling_info<sycl::info::event_profiling::command_end>();
+
+  return end - start;
+}
