@@ -155,4 +155,56 @@ prepare_message_schedule(const sycl::uint* __restrict in,
   }
 }
 
+// This function takes a padded & parsed message block ( 512 -bit ) as input and
+// produces 160 -bit SHA1 digest i.e. it computes 2-to-1 hash, which is useful
+// during binary merklization
+//
+// See section 6.1.2 of Secure Hash Standard
+// http://dx.doi.org/10.6028/NIST.FIPS.180-4
+void
+hash(const sycl::uint* __restrict in, sycl::uint* const __restrict digest)
+{
+  sycl::uint msg_schld[80];
+  prepare_message_schedule(in, msg_schld);
+
+  // initialize working variables with initial hash state values
+  sycl::uint a = IV_0[0];
+  sycl::uint b = IV_0[1];
+  sycl::uint c = IV_0[2];
+  sycl::uint d = IV_0[3];
+  sycl::uint e = IV_0[4];
+
+  // this loop can't be unrolled due to complex nature of
+  // loop carried dependencies !
+  //
+  // input message words are consumed into hash state
+  for (size_t i = 0; i < 80; i++) {
+    sycl::uint tmp =
+      rotl(a, 5) + i >= 0 && i < 20
+        ? ch(b, c, d)
+        : i >= 20 && i < 40
+            ? parity(b, c, d)
+            : i >= 40 && i < 60
+                ? maj(b, c, d)
+                : parity(b, c, d) + e + i >= 0 && i < 20
+                    ? K_0
+                    : i >= 20 && i < 40
+                        ? K_1
+                        : i >= 40 && i < 60 ? K_2 : K_3 + msg_schld[i];
+
+    e = d;
+    d = c;
+    c = rotl(b, 30);
+    b = a;
+    a = tmp;
+  }
+
+  // compute 20 -bytes sha1 digest of 64 -bytes message block
+  *(digest + 0) = IV_0[0] + a;
+  *(digest + 1) = IV_0[1] + b;
+  *(digest + 2) = IV_0[2] + c;
+  *(digest + 3) = IV_0[3] + d;
+  *(digest + 4) = IV_0[4] + e;
+}
+
 }
