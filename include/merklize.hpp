@@ -105,8 +105,8 @@ merklize(sycl::queue& q,
 
           sycl::uint padded[16];
 
-          sha1::pad_input_message(intermediates + i_offset + in_idx, padded);
-          sha1::hash(padded, intermediates + o_offset + out_idx);
+          sha1::pad_input_message(intermediates + i_offset_ + in_idx, padded);
+          sha1::hash(padded, intermediates + o_offset_ + out_idx);
         });
     });
     evts_0.push_back(evt_1);
