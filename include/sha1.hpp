@@ -1,4 +1,5 @@
 #pragma once
+#include "utils.hpp"
 #include <CL/sycl.hpp>
 #include <cassert>
 
@@ -125,6 +126,32 @@ parse_message_words(const sycl::uchar* __restrict in,
                  (static_cast<sycl::uint>(*(in + i * 4 + 1)) << 16) |
                  (static_cast<sycl::uint>(*(in + i * 4 + 2)) << 28) |
                  (static_cast<sycl::uint>(*(in + i * 4 + 3)) << 0);
+  }
+}
+
+// Given sixteen 32 -bit words as input to SHA1 hash function
+// prepares eighty 32 -bit words ( as message consumption schedule ) which are
+// consumed into hash state
+//
+// See step 1 of algorithm defined in section 6.1.2 of Secure Hash Standard
+// http://dx.doi.org/10.6028/NIST.FIPS.180-4
+void
+prepare_message_schedule(const sycl::uint* __restrict in,
+                         sycl::uint* const __restrict out)
+{
+  // fully parallelize the loop execution
+#pragma unroll 16
+  for (size_t i = 0; i < 16; i++) {
+    *(out + i) = *(in + i);
+  }
+
+  // total 64 iteration rounds to be executed, attempting to partially
+  // unroll
+#pragma unroll 16
+  for (size_t i = 16; i < 80; i++) {
+    *(out + i) = rotl(*(out + (i - 3)) ^ *(out + (i - 8)) ^ *(out + (i - 14)) ^
+                        *(out + (i - 16)),
+                      1);
   }
 }
 
