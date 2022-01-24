@@ -1,6 +1,8 @@
 #pragma once
 #include "sha1.hpp"
 
+// Binary merklization --- collects motivation from
+// https://github.com/itzmeanjan/blake3/blob/e2a1340a9a7972854889d494b450d72c2198cace/include/merklize.hpp#L4-L12
 sycl::cl_ulong
 merklize(sycl::queue& q,
          const sycl::uint* __restrict leaf_nodes,
