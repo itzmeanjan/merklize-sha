@@ -51,6 +51,9 @@ maj(sycl::uint x, sycl::uint y, sycl::uint z)
 //
 // In next step output byte array can be processed to have 16 SHA1 words ( each
 // word 32 -bit wide, obtained from four consecutive big-endian bytes )
+//
+// See section 5.1.1 of Secure Hash Standard
+// http://dx.doi.org/10.6028/NIST.FIPS.180-4
 void
 pad_input_message(const sycl::uchar* __restrict in,
                   size_t in_bit_len,
@@ -91,6 +94,28 @@ pad_input_message(const sycl::uchar* __restrict in,
   // which is 320 -bit
   *(out + 62) = 0b00000001;
   *(out + 63) = 0b01000000;
+}
+
+// Given 512 -bit wide input message block ( read 64 -bytes )
+// this function takes each of four consecutive bytes ( in big-endian order )
+// and produces sixteen 32 -bit message words
+//
+// See section 5.2.1 of Secure Hash Standard
+// http://dx.doi.org/10.6028/NIST.FIPS.180-4
+void
+parse_message_words(const sycl::uchar* __restrict in,
+                    sycl::uint* const __restrict out)
+{
+  // attempt to fully parallelize this loop execution
+  //
+  // no loop carried dependency !
+#pragma unroll 16
+  for (size_t i = 0; i < 16; i++) {
+    *(out + i) = (static_cast<sycl::uint>(*(in + i * 4 + 0)) << 24) |
+                 (static_cast<sycl::uint>(*(in + i * 4 + 1)) << 16) |
+                 (static_cast<sycl::uint>(*(in + i * 4 + 2)) << 28) |
+                 (static_cast<sycl::uint>(*(in + i * 4 + 3)) << 0);
+  }
 }
 
 }
