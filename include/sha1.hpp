@@ -13,6 +13,16 @@ constexpr sycl::uint K_1 = 0x6ed9eba1; // 20 <= t <= 39
 constexpr sycl::uint K_2 = 0x8f1bbcdc; // 40 <= t <= 59
 constexpr sycl::uint K_3 = 0xca62c1d6; // 60 <= t <= 79
 
+// Initial hash values for SHA1
+//
+// See section 5.3.1 of Secure Hash Standard
+// http://dx.doi.org/10.6028/NIST.FIPS.180-4
+constexpr sycl::uint IV_0[5] = { 0x67452301,
+                                 0xefcdab89,
+                                 0x98badcfe,
+                                 0x10325476,
+                                 0xc3d2e1f0 };
+
 // SHA1 functions, see section 4.1.1 of Secure Hash Standard
 // http://dx.doi.org/10.6028/NIST.FIPS.180-4
 //
