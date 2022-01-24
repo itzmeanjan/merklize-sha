@@ -167,10 +167,7 @@ parse_message_words(const sycl::uchar* __restrict in,
   // no loop carried dependency !
 #pragma unroll 16
   for (size_t i = 0; i < 16; i++) {
-    *(out + i) = (static_cast<sycl::uint>(*(in + i * 4 + 0)) << 24) |
-                 (static_cast<sycl::uint>(*(in + i * 4 + 1)) << 16) |
-                 (static_cast<sycl::uint>(*(in + i * 4 + 2)) << 8) |
-                 (static_cast<sycl::uint>(*(in + i * 4 + 3)) << 0);
+    *(out + i) = from_be_bytes_to_words(in + i * 4);
   }
 }
 
@@ -187,11 +184,7 @@ words_to_be_bytes(const sycl::uint* __restrict in,
 #pragma unroll 5
   for (size_t i = 0; i < 5; i++) {
     const sycl::uint num = *(in + i);
-
-    *(out + i * 4 + 0) = static_cast<sycl::uchar>((num >> 24) & 0xff);
-    *(out + i * 4 + 1) = static_cast<sycl::uchar>((num >> 16) & 0xff);
-    *(out + i * 4 + 2) = static_cast<sycl::uchar>((num >> 8) & 0xff);
-    *(out + i * 4 + 3) = static_cast<sycl::uchar>((num >> 0) & 0xff);
+    from_words_to_be_bytes(num, out + (i << 2));
   }
 }
 
