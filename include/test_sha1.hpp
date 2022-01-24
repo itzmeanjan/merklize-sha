@@ -11,10 +11,9 @@ test_sha1(sycl::queue& q)
   // >>> list(hashlib.sha1(bytes([i for i in range(40)])).digest())
   //
   // note, same input is prepared inside 👇 for loop
-  sycl::uchar expected[20] = {
-    204, 154, 217, 158, 145, 112, 66, 56,  27,  15,
-    153, 88,  136, 150, 203, 242, 54, 170, 142, 211
-  };
+  constexpr sycl::uchar expected[20] = { 204, 154, 217, 158, 145, 112, 66,
+                                         56,  27,  15,  153, 88,  136, 150,
+                                         203, 242, 54,  170, 142, 211 };
 
   // acquire resources
   sycl::uchar* in_0 = static_cast<sycl::uchar*>(sycl::malloc_shared(40, q));
