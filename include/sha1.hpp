@@ -1,7 +1,6 @@
 #pragma once
 #include "utils.hpp"
 #include <CL/sycl.hpp>
-#include <cassert>
 
 namespace sha1 {
 
@@ -67,26 +66,19 @@ maj(sycl::uint x, sycl::uint y, sycl::uint z)
 // http://dx.doi.org/10.6028/NIST.FIPS.180-4
 void
 pad_input_message(const sycl::uchar* __restrict in,
-                  size_t in_bit_len,
-                  sycl::uchar* const __restrict out,
-                  size_t out_bit_len)
+                  sycl::uchar* const __restrict out)
 {
-  // input is always 40 -bytes i.e. two sha1 digests concatenated
-  assert(in_bit_len == 320);
-  // output is 64 -bytes i.e. a message block of sha1
-  assert(out_bit_len == 512);
-
   // attempt to parallelize copying of input to output byte array
   //
   // copies first 40 -bytes as it's
   //
   // note, this loop will be partially unrolled
 #pragma unroll 8
-  for (size_t i = 0; i < (in_bit_len >> 3); i++) {
+  for (size_t i = 0; i < 40; i++) {
     *(out + i) = *(in + i);
   }
 
-  const sycl::uint offset = in_bit_len >> 3;
+  constexpr size_t offset = 40;
 
   // then set 41 -st byte, as defined in sha1 specification
   *(out + offset) = 0b10000000;
@@ -124,8 +116,29 @@ parse_message_words(const sycl::uchar* __restrict in,
   for (size_t i = 0; i < 16; i++) {
     *(out + i) = (static_cast<sycl::uint>(*(in + i * 4 + 0)) << 24) |
                  (static_cast<sycl::uint>(*(in + i * 4 + 1)) << 16) |
-                 (static_cast<sycl::uint>(*(in + i * 4 + 2)) << 28) |
+                 (static_cast<sycl::uint>(*(in + i * 4 + 2)) << 8) |
                  (static_cast<sycl::uint>(*(in + i * 4 + 3)) << 0);
+  }
+}
+
+// Five SHA1 message words are converted into equivalent length ( 20 -bytes )
+// big endian byte array
+//
+// This function will be used for converting SHA1 digest to byte array form
+//
+// It does opposite of `parse_message_words` defined 👆
+void
+words_to_be_bytes(const sycl::uint* __restrict in,
+                  sycl::uchar* const __restrict out)
+{
+#pragma unroll 5
+  for (size_t i = 0; i < 5; i++) {
+    const sycl::uint num = *(in + i);
+
+    *(out + i * 4 + 0) = static_cast<sycl::uchar>((num >> 24) & 0xff);
+    *(out + i * 4 + 1) = static_cast<sycl::uchar>((num >> 16) & 0xff);
+    *(out + i * 4 + 2) = static_cast<sycl::uchar>((num >> 8) & 0xff);
+    *(out + i * 4 + 3) = static_cast<sycl::uchar>((num >> 0) & 0xff);
   }
 }
 
@@ -149,9 +162,10 @@ prepare_message_schedule(const sycl::uint* __restrict in,
   // unroll
 #pragma unroll 16
   for (size_t i = 16; i < 80; i++) {
-    *(out + i) = rotl(*(out + (i - 3)) ^ *(out + (i - 8)) ^ *(out + (i - 14)) ^
-                        *(out + (i - 16)),
-                      1);
+    const sycl::uint tmp0 = *(out + (i - 3)) ^ *(out + (i - 8));
+    const sycl::uint tmp1 = *(out + (i - 14)) ^ *(out + (i - 16));
+
+    *(out + i) = rotl(tmp0 ^ tmp1, 1);
   }
 }
 
@@ -174,24 +188,39 @@ hash(const sycl::uint* __restrict in, sycl::uint* const __restrict digest)
   sycl::uint d = IV_0[3];
   sycl::uint e = IV_0[4];
 
-  // this loop can't be unrolled due to complex nature of
+  // following four loops can't be unrolled due to (somewhat) complex nature of
   // loop carried dependencies !
   //
-  // input message words are consumed into hash state
-  for (size_t i = 0; i < 80; i++) {
-    sycl::uint tmp =
-      rotl(a, 5) + i >= 0 && i < 20
-        ? ch(b, c, d)
-        : i >= 20 && i < 40
-            ? parity(b, c, d)
-            : i >= 40 && i < 60
-                ? maj(b, c, d)
-                : parity(b, c, d) + e + i >= 0 && i < 20
-                    ? K_0
-                    : i >= 20 && i < 40
-                        ? K_1
-                        : i >= 40 && i < 60 ? K_2 : K_3 + msg_schld[i];
+  // input message words are consumed into hash state in total 80 rounds
+  for (size_t i = 0; i < 20; i++) {
+    sycl::uint tmp = rotl(a, 5) + ch(b, c, d) + e + K_0 + msg_schld[i];
+    e = d;
+    d = c;
+    c = rotl(b, 30);
+    b = a;
+    a = tmp;
+  }
 
+  for (size_t i = 20; i < 40; i++) {
+    sycl::uint tmp = rotl(a, 5) + parity(b, c, d) + e + K_1 + msg_schld[i];
+    e = d;
+    d = c;
+    c = rotl(b, 30);
+    b = a;
+    a = tmp;
+  }
+
+  for (size_t i = 40; i < 60; i++) {
+    sycl::uint tmp = rotl(a, 5) + maj(b, c, d) + e + K_2 + msg_schld[i];
+    e = d;
+    d = c;
+    c = rotl(b, 30);
+    b = a;
+    a = tmp;
+  }
+
+  for (size_t i = 60; i < 80; i++) {
+    sycl::uint tmp = rotl(a, 5) + parity(b, c, d) + e + K_3 + msg_schld[i];
     e = d;
     d = c;
     c = rotl(b, 30);
