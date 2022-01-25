@@ -73,4 +73,84 @@ inline sycl::uint
   return rotr(x, 17) ^ rotr(x, 19) ^ (x >> 10);
 }
 
+// Given 512 -bits of input ( two SHA2-256 digests concatenated ), this function
+// appends 1 -bit, required 447 -many 0 -bit and finally 64 -bits representing
+// input message length ( = 512 ) in bits, making total of 1024 bits padded
+// input, which will be now parsed into words & hashed.
+//
+// See section 5.1.1 of Secure Hash Standard
+// http://dx.doi.org/10.6028/NIST.FIPS.180-4
+void
+pad_input_message(const sycl::uchar* __restrict in,
+                  sycl::uchar* const __restrict out)
+{
+  // copy 512 -bits of original input to output memory allocation
+  //
+  // try to (partially) parallelize this loop execution, due to absense of
+  // loop carried dependencies
+#pragma unroll 16
+  for (size_t i = 0; i < 64; i++) {
+    *(out + i) = *(in + i);
+  }
+
+  constexpr size_t offset = 64;
+
+  // then setting 65 -th byte, as defined in section 5.1.1 of sha2 specification
+  *(out + offset) = 0b10000000;
+
+  // now setting next 61 bytes to zero
+  //
+  // 61 being prime number, I can't partially unroll this loop
+  // execution, so relying on compiler to decide what should/ can be done
+#pragma unroll
+  for (size_t i = 1; i < 62; i++) {
+    *(out + offset + i) = 0;
+  }
+
+  // setting last two bytes of total 128 -bytes input, where
+  // original length of input ( in bits ) is kept
+  //
+  // so last two bytes denote 512 = length of input being hashed
+  *(out + 126) = 0b00000010;
+  *(out + 127) = 0b00000000;
+}
+
+// When input message is interpreted in terms of SHA2-256 words ( = 32 -bit wide
+// ) input padding involves adding 16 new words, which is just same as done in 👆
+// `pad_input_message`, but 4 consecutive big endian bytes are now interpreted
+// as one word
+//
+// Output of this function is 32 -words, where first 16 words are original input
+// ( = 512 bits ) and last 16 words are padding
+//
+// See section 5.1.1 of Secure Hash Standard
+// http://dx.doi.org/10.6028/NIST.FIPS.180-4
+void
+pad_input_message(const sycl::uint* __restrict in,
+                  sycl::uint* const __restrict out)
+{
+  // copy first 64 -bytes = 16 words ( sha2-256 words are 32 -bit wide )
+  // from input to output memory allocation
+  //
+  // this loop execution can be fully parallelized
+#pragma unroll 16
+  for (size_t i = 0; i < 16; i++) {
+    *(out + i) = *(in + i);
+  }
+
+  constexpr size_t offset = 16;
+
+  // setting 16 -th word
+  *(out + offset) = 0b10000000 << 24;
+
+  // next 14 words are set to 0, due to padding requirement
+#pragma unroll 14
+  for (size_t i = 1; i < 15; i++) {
+    *(out + offset + i) = 0;
+  }
+
+  // finally last word set to length of input in bits ( = 512 )
+  *(out + 31) = 0 | 0b00000010 << 8;
+}
+
 }
