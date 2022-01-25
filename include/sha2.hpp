@@ -205,4 +205,80 @@ prepare_message_schedule(const sycl::uint* __restrict in,
   }
 }
 
+// Takes two padded, parsed input message blocks ( = 1024 -bit ) and computes
+// SHA2-256 digest ( = 256 -bit ) on input in two rounds ( because two message
+// blocks are processed sequentially )
+//
+// See algorithm defined in section 6.2.2 of Secure Hash Standard
+// http://dx.doi.org/10.6028/NIST.FIPS.180-4
+void
+hash(const sycl::uint* __restrict in, sycl::uint* const __restrict digest)
+{
+  sycl::uint msg_schld[64];
+  sycl::uint hash_state[8];
+
+  // fully parallelize hash state initialization
+#pragma unroll 8
+  for (size_t i = 0; i < 8; i++) {
+    hash_state[i] = IV_0[i];
+  }
+
+  // two message blocks to be processed
+  //
+  // can't unroll this loop, too many logic inside loop body with
+  // somewhat complex nature of loop carried dependencies
+  for (size_t i = 0; i < 2; i++) {
+    // see step 1 of algorithm defined in section  6.2.2 of Secure Hash Standard
+    // http://dx.doi.org/10.6028/NIST.FIPS.180-4
+    prepare_message_schedule(in + 16 * i, msg_schld);
+
+    // see step 2 of algorithm defined in section  6.2.2 of Secure Hash Standard
+    // http://dx.doi.org/10.6028/NIST.FIPS.180-4
+    sycl::uint a = hash_state[0];
+    sycl::uint b = hash_state[1];
+    sycl::uint c = hash_state[2];
+    sycl::uint d = hash_state[3];
+    sycl::uint e = hash_state[4];
+    sycl::uint f = hash_state[5];
+    sycl::uint g = hash_state[6];
+    sycl::uint h = hash_state[7];
+
+    // can't parallelize loop execution, due to complex nature of loop carried
+    // dependencies
+    //
+    // see step 3 of algorithm defined in section  6.2.2 of Secure Hash Standard
+    // http://dx.doi.org/10.6028/NIST.FIPS.180-4
+    for (size_t t = 0; t < 64; t++) {
+      sycl::uint tmp0 = h + Σ_1(e) + ch(e, f, g) + K[t] + msg_schld[t];
+      sycl::uint tmp1 = Σ_0(a) + maj(a, b, c);
+      h = g;
+      g = f;
+      f = e;
+      e = d + tmp0;
+      d = c;
+      c = b;
+      b = a;
+      a = tmp0 + tmp1;
+    }
+
+    // see step 4 of algorithm defined in section  6.2.2 of Secure Hash Standard
+    // http://dx.doi.org/10.6028/NIST.FIPS.180-4
+    hash_state[0] += a;
+    hash_state[1] += b;
+    hash_state[2] += c;
+    hash_state[3] += d;
+    hash_state[4] += e;
+    hash_state[5] += f;
+    hash_state[6] += g;
+    hash_state[7] += h;
+  }
+
+  // write 256 -bit digest back to allocated memory --- final hash state after
+  // consuming two message blocks
+#pragma unroll 8
+  for (size_t i = 0; i < 8; i++) {
+    *(digest + i) = hash_state[i];
+  }
+}
+
 }
