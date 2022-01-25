@@ -179,4 +179,30 @@ parse_message_words(const sycl::uchar* __restrict in,
   }
 }
 
+// Given 512 -bit input message block, it prepares 64 message schedules
+// for consuming input message into hash state
+//
+// See step 1 of algorithm defined in section 6.2.2 of Secure Hash Standard
+// http://dx.doi.org/10.6028/NIST.FIPS.180-4
+void
+prepare_message_schedule(const sycl::uint* __restrict in,
+                         sycl::uint* const __restrict out)
+{
+  // first 16 message schedules are same as original message words
+  // of 512 -bit message block
+#pragma unroll 16
+  for (size_t i = 0; i < 16; i++) {
+    *(out + i) = *(in + i);
+  }
+
+  // 48 iteration rounds, preparing 48 remaining message schedules
+#pragma unroll 16
+  for (size_t i = 16; i < 64; i++) {
+    const sycl::uint tmp0 = σ_1(*(out + (i - 2))) + *(out + (i - 7));
+    const sycl::uint tmp1 = σ_0(*(out + (i - 15))) + *(out + (i - 16));
+
+    *(out + i) = tmp0 + tmp1;
+  }
+}
+
 }
