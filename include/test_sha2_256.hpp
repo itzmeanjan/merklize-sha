@@ -1,9 +1,9 @@
 #pragma once
-#include "sha2.hpp"
+#include "sha2_256.hpp"
 #include <cassert>
 
 void
-test_sha2(sycl::queue& q)
+test_sha2_256(sycl::queue& q)
 {
   // obtained by executing following snippet in python3 shell
   //
@@ -24,7 +24,7 @@ test_sha2(sycl::queue& q)
 
 #pragma unroll 16
   for (size_t i = 0; i < 64; i++) {
-    // preparing input for testing 2-to-1 SHA1 hash
+    // preparing input for testing 2-to-1 SHA2-256 hash
     *(in_0 + i) = i;
   }
 
@@ -32,7 +32,7 @@ test_sha2(sycl::queue& q)
   for (size_t i = 0; i < 16; i++) {
     sycl::uint v = static_cast<sycl::uint>(i << 2);
 
-    // preparing input to hash function as words, instead of big endian
+    // preparing input to SHA2-256 hash function as words, instead of big endian
     // byte array, which is already prepared above
     //
     // so that I can test it both ways --- see below, two kernels dispatched
@@ -45,9 +45,9 @@ test_sha2(sycl::queue& q)
     sycl::uint parsed[32];
     sycl::uint digest[8];
 
-    sha2::pad_input_message(in_0, padded);
-    sha2::parse_message_words(padded, parsed);
-    sha2::hash(parsed, digest);
+    sha2_256::pad_input_message(in_0, padded);
+    sha2_256::parse_message_words(padded, parsed);
+    sha2_256::hash(parsed, digest);
 
     // converting each message word of digest into four consecutive big endian
     // bytes
@@ -62,8 +62,8 @@ test_sha2(sycl::queue& q)
     sycl::uint padded[32];
     sycl::uint digest[8];
 
-    sha2::pad_input_message(in_1, padded);
-    sha2::hash(padded, digest);
+    sha2_256::pad_input_message(in_1, padded);
+    sha2_256::hash(padded, digest);
 
     // converting each message word of digest into four consecutive big endian
     // bytes

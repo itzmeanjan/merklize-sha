@@ -2,7 +2,7 @@
 #include "utils.hpp"
 #include <CL/sycl.hpp>
 
-namespace sha2 {
+namespace sha2_256 {
 
 // Both of SHA2 {224, 256} -bit variants use same 64 constants, which are
 // specified in section 4.2.2 of Secure Hash Standard

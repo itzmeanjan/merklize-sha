@@ -1,5 +1,6 @@
 #include "test_merklize.hpp"
 #include "test_sha1.hpp"
+#include "test_sha2_256.hpp"
 #include <iostream>
 
 int
@@ -19,6 +20,9 @@ main(int argc, char** argv)
   std::cout << "passed SHA1 test !" << std::endl;
   test_merklize(q);
   std::cout << "passed binary merklization ( using SHA1 ) test !" << std::endl;
+
+  test_sha2_256(q);
+  std::cout << "passed SHA2-256 test !" << std::endl;
 
   return EXIT_SUCCESS;
 }
