@@ -153,4 +153,23 @@ pad_input_message(const sycl::uint* __restrict in,
   *(out + 31) = 0 | 0b00000010 << 8;
 }
 
+// Each of four consecutive big endian bytes of 1024 -bit padded input are
+// interpreted as SHA2-256 word ( = 32 -bit ), making total of 32 words as
+// output
+//
+// See section 5.2.1 of Secure Hash Standard
+// http://dx.doi.org/10.6028/NIST.FIPS.180-4
+void
+parse_message_words(const sycl::uchar* __restrict in,
+                    sycl::uint* const __restrict out)
+{
+  // attempt to partially parallelize this loop execution
+  //
+  // no loop carried dependency !
+#pragma unroll 16
+  for (size_t i = 0; i < 32; i++) {
+    *(out + i) = from_be_bytes_to_words(in + i * 4);
+  }
+}
+
 }
