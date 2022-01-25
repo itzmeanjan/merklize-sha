@@ -6,15 +6,13 @@
 
 #if defined SHA1
 #include "sha1.hpp"
-#pragma message "Choosing to compile with SHA1 !"
+#pragma message "Choosing to compile Merklization with SHA1 !"
 #elif defined SHA2_224
 #include "sha2_224.hpp"
-#pragma message "Choosing to compile with SHA2-224 !"
+#pragma message "Choosing to compile Merklization with SHA2-224 !"
 #elif defined SHA2_256
 #include "sha2_256.hpp"
-#pragma message "Choosing to compile with SHA2-256 !"
-#else
-#error "Nothing to compile with !"
+#pragma message "Choosing to compile Merklization with SHA2-256 !"
 #endif
 
 // Binary merklization --- collects motivation from
