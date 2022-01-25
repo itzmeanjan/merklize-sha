@@ -9,9 +9,18 @@ test_merklize(sycl::queue& q)
   // testing on binary merkle tree which has 8 leaf nodes
   constexpr size_t leaf_cnt = 1 << 3;
 
+#if SHA == sha1
   constexpr size_t i_size = leaf_cnt * sha1::OUT_LEN_BYTES; // in bytes
   constexpr size_t o_size = leaf_cnt * sha1::OUT_LEN_BYTES; // in bytes
+#elif SHA == sha2_224
+  constexpr size_t i_size = leaf_cnt * sha2_224::OUT_LEN_BYTES; // in bytes
+  constexpr size_t o_size = leaf_cnt * sha2_224::OUT_LEN_BYTES; // in bytes
+#elif SHA == sha2_256
+  constexpr size_t i_size = leaf_cnt * sha2_256::OUT_LEN_BYTES; // in bytes
+  constexpr size_t o_size = leaf_cnt * sha2_256::OUT_LEN_BYTES; // in bytes
+#endif
 
+#if SHA == sha1
   // obtained using following code snippet run on python3 shell
   //
   // >>> import hashlib
@@ -27,6 +36,9 @@ test_merklize(sycl::queue& q)
   constexpr sycl::uchar expected[20] = { 139, 49,  56,  44,  55,  31, 24,
                                          110, 245, 27,  105, 167, 84, 13,
                                          218, 12,  209, 49,  184, 54 };
+#elif SHA == sha2_224
+#elif SHA == sha2_256
+#endif
 
   // acquire resources
   sycl::uchar* in_0 = (sycl::uchar*)sycl::malloc_shared(i_size, q);
@@ -37,7 +49,7 @@ test_merklize(sycl::queue& q)
   // prepare input bytes
   q.memset(in_0, 0xff, i_size).wait();
   // I'm doing this intensionally just to check that
-  // first 20 -bytes are never touched by any work-items !
+  // first digest bytes are never touched by any work-items !
   q.memset(out_0, 0, o_size).wait();
 
   // convert input bytes to hash words !
@@ -65,16 +77,40 @@ test_merklize(sycl::queue& q)
     const sycl::uint num = *(out_0 + i);
     from_words_to_be_bytes(num, out_1 + (i << 2));
   }
-
   // first 20 -bytes should never be touched !
-  for (size_t i = 0; i < sha1::OUT_LEN_BYTES; i++) {
+  for (size_t i = 0; i <
+
+#if SHA == sha1
+                     sha1::OUT_LEN_BYTES
+#elif SHA == sha2_224
+                     sha2_224::OUT_LEN_BYTES
+#elif SHA == sha2_256
+                     sha2_256::OUT_LEN_BYTES
+#endif
+
+       ;
+
+       i++) {
     assert(*(out_1 + i) == 0);
   }
 
   // then comes root of merkle tree !
+
+#if SHA == sha1
   for (size_t i = sha1::OUT_LEN_BYTES, j = 0;
        i < (sha1::OUT_LEN_BYTES << 1) && j < sha1::OUT_LEN_BYTES;
-       i++, j++) {
+       i++, j++)
+#elif SHA == sha2_224
+  for (size_t i = sha2_224::OUT_LEN_BYTES, j = 0;
+       i < (sha2_224::OUT_LEN_BYTES << 1) && j < sha2_224::OUT_LEN_BYTES;
+       i++, j++)
+#elif SHA == sha2_256
+  for (size_t i = sha2_256::OUT_LEN_BYTES, j = 0;
+       i < (sha2_256::OUT_LEN_BYTES << 1) && j < sha2_256::OUT_LEN_BYTES;
+       i++, j++)
+#endif
+
+  {
     assert(*(out_1 + i) == expected[j]);
   }
 
