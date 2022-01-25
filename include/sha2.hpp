@@ -21,6 +21,13 @@ constexpr sycl::uint K[64] = {
   0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
 };
 
+// Initial hash values, as specified in section 5.3.3 of Secure Hash Standard
+// http://dx.doi.org/10.6028/NIST.FIPS.180-4
+constexpr sycl::uint IV_0[8] = {
+  0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
+  0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
+};
+
 // SHA2 function, defined in section 4.1.2 of Secure Hash Standard
 // http://dx.doi.org/10.6028/NIST.FIPS.180-4
 //
