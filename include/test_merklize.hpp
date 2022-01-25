@@ -123,7 +123,8 @@ test_merklize(sycl::queue& q)
     const sycl::uint num = *(out_0 + i);
     from_words_to_be_bytes(num, out_1 + (i << 2));
   }
-  // first 20 -bytes should never be touched !
+
+  // first digest should never be touched !
   for (size_t i = 0; i <
 
 #if defined SHA1
