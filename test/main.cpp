@@ -19,14 +19,24 @@ main(int argc, char** argv)
 
   test_sha1(q);
   std::cout << "passed SHA1 test !" << std::endl;
-  test_merklize(q);
-  std::cout << "passed binary merklization ( using SHA1 ) test !" << std::endl;
+
+  test_sha2_224(q);
+  std::cout << "passed SHA2-224 test !" << std::endl;
 
   test_sha2_256(q);
   std::cout << "passed SHA2-256 test !" << std::endl;
 
-  test_sha2_224(q);
-  std::cout << "passed SHA2-224 test !" << std::endl;
+  test_merklize(q);
+
+#if defined SHA1
+  std::cout << "passed binary merklization ( using SHA1 ) test !" << std::endl;
+#elif defined SHA2_224
+  std::cout << "passed binary merklization ( using SHA2-224 ) test !"
+            << std::endl;
+#elif defined SHA2_256
+  std::cout << "passed binary merklization ( using SHA2-256 ) test !"
+            << std::endl;
+#endif
 
   return EXIT_SUCCESS;
 }

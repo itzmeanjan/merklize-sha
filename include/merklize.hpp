@@ -1,15 +1,20 @@
 #pragma once
 
-#ifndef SHA
-#define SHA sha1
+#if !(defined SHA1 || defined SHA2_224 || defined SHA2_256)
+#define SHA2_256
 #endif
 
-#if SHA == sha1
+#if defined SHA1
 #include "sha1.hpp"
-#elif SHA == sha2_224
+#pragma message "Choosing to compile with SHA1 !"
+#elif defined SHA2_224
 #include "sha2_224.hpp"
-#elif SHA == sha2_256
+#pragma message "Choosing to compile with SHA2-224 !"
+#elif defined SHA2_256
 #include "sha2_256.hpp"
+#pragma message "Choosing to compile with SHA2-256 !"
+#else
+#error "Nothing to compile with !"
 #endif
 
 // Binary merklization --- collects motivation from
@@ -30,13 +35,13 @@ merklize(sycl::queue& q,
   // Note N = power of 2
   assert(leaf_cnt == itmd_cnt + 1);
 
-#if SHA == sha1
+#if defined SHA1
   assert(i_size == leaf_cnt * sha1::OUT_LEN_BYTES);
   assert(o_size == (itmd_cnt + 1) * sha1::OUT_LEN_BYTES);
-#elif SHA == sha2_224
+#elif defined SHA2_224
   assert(i_size == leaf_cnt * sha2_224::OUT_LEN_BYTES);
   assert(o_size == (itmd_cnt + 1) * sha2_224::OUT_LEN_BYTES);
-#elif SHA == sha2_256
+#elif defined SHA2_256
   assert(i_size == leaf_cnt * sha2_256::OUT_LEN_BYTES);
   assert(o_size == (itmd_cnt + 1) * sha2_256::OUT_LEN_BYTES);
 #endif
@@ -74,30 +79,30 @@ merklize(sycl::queue& q,
       [=](sycl::nd_item<1> it) {
         const size_t idx = it.get_global_linear_id();
 
-#if SHA == sha1
+#if defined SHA1
         const size_t in_idx = idx * (sha1::IN_LEN_BYTES >> 2);
         const size_t out_idx = idx * (sha1::OUT_LEN_BYTES >> 2);
 
         sycl::uint padded[16];
-#elif SHA == sha2_224
+#elif defined SHA2_224
         const size_t in_idx = idx * (sha2_224::IN_LEN_BYTES >> 2);
         const size_t out_idx = idx * (sha2_224::OUT_LEN_BYTES >> 2);
 
         sycl::uint padded[32];
-#elif SHA == sha2_256
+#elif defined SHA2_256
         const size_t in_idx = idx * (sha2_256::IN_LEN_BYTES >> 2);
         const size_t out_idx = idx * (sha2_256::OUT_LEN_BYTES >> 2);
 
         sycl::uint padded[32];
 #endif
 
-#if SHA == sha1
+#if defined SHA1
         sha1::pad_input_message(leaf_nodes + i_offset + in_idx, padded);
         sha1::hash(padded, intermediates + o_offset + out_idx);
-#elif SHA == sha2_224
+#elif defined SHA2_224
         sha2_224::pad_input_message(leaf_nodes + i_offset + in_idx, padded);
         sha2_224::hash(padded, intermediates + o_offset + out_idx);
-#elif SHA == sha2_256
+#elif defined SHA2_256
         sha2_256::pad_input_message(leaf_nodes + i_offset + in_idx, padded);
         sha2_256::hash(padded, intermediates + o_offset + out_idx);
 #endif
@@ -141,31 +146,31 @@ merklize(sycl::queue& q,
         [=](sycl::nd_item<1> it) {
           const size_t idx = it.get_global_linear_id();
 
-#if SHA == sha1
+#if defined SHA1
           const size_t in_idx = idx * (sha1::IN_LEN_BYTES >> 2);
           const size_t out_idx = idx * (sha1::OUT_LEN_BYTES >> 2);
 
           sycl::uint padded[16];
-#elif SHA == sha2_224
+#elif defined SHA2_224
           const size_t in_idx = idx * (sha2_224::IN_LEN_BYTES >> 2);
           const size_t out_idx = idx * (sha2_224::OUT_LEN_BYTES >> 2);
 
           sycl::uint padded[32];
-#elif SHA == sha2_256
+#elif defined SHA2_256
           const size_t in_idx = idx * (sha2_256::IN_LEN_BYTES >> 2);
           const size_t out_idx = idx * (sha2_256::OUT_LEN_BYTES >> 2);
 
           sycl::uint padded[32];
 #endif
 
-#if SHA == sha1
+#if defined SHA1
           sha1::pad_input_message(intermediates + i_offset_ + in_idx, padded);
           sha1::hash(padded, intermediates + o_offset_ + out_idx);
-#elif SHA == sha2_224
+#elif defined SHA2_224
           sha2_224::pad_input_message(intermediates + i_offset_ + in_idx,
                                       padded);
           sha2_224::hash(padded, intermediates + o_offset_ + out_idx);
-#elif SHA == sha2_256
+#elif defined SHA2_256
           sha2_256::pad_input_message(intermediates + i_offset_ + in_idx,
                                       padded);
           sha2_256::hash(padded, intermediates + o_offset_ + out_idx);
