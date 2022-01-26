@@ -5,7 +5,7 @@ CXX_FLAGS = -Wall -std=c++20
 SYCL_FLAGS = -fsycl
 SYCL_CUDA_FLAGS = -fsycl-targets=nvptx64-nvidia-cuda
 SYCL_CPU_FLAGS = -fsycl-targets=spir64_x86_64
-SYCL_GPU_FLAGS = $(SYCL_GPU_FLAGS)
+SYCL_GPU_FLAGS = -fsycl-targets=spir64_gen
 OPT_FLAGS = -O3
 IFLAGS = -I./include
 SHA_VARIANT = -D$(shell echo $(or $(SHA),sha2_256) | tr a-z A-Z)
