@@ -1,34 +1,37 @@
-#include "sha2_224.hpp"
+#include "sha2_256.hpp"
 #include <cassert>
 
-// This example attempts to show how to use 2-to-1 SHA2-224 hash function !
+// This example attempts to show how to use 2-to-1 SHA2-256 hash function !
 int
 main(int argc, char** argv)
 {
   // $ python3
-  // >>> a = [0xff] * 28
+  // >>> a = [0xff] * 32
   //
   // first input digest
-  constexpr sycl::uchar digest_0[28] = { 255, 255, 255, 255, 255, 255, 255,
-                                         255, 255, 255, 255, 255, 255, 255,
-                                         255, 255, 255, 255, 255, 255, 255,
-                                         255, 255, 255, 255, 255, 255, 255 };
-  // >>> b = [0x0f] * 28
+  constexpr sycl::uchar digest_0[32] = {
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255
+  };
+
+  // >>> b = [0x0f] * 32
   //
   // second input digest
-  constexpr sycl::uchar digest_1[28] = { 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
-                                         15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+  constexpr sycl::uchar digest_1[32] = { 15, 15, 15, 15, 15, 15, 15, 15,
+                                         15, 15, 15, 15, 15, 15, 15, 15,
+                                         15, 15, 15, 15, 15, 15, 15, 15,
                                          15, 15, 15, 15, 15, 15, 15, 15 };
 
   // >>> c = a + b
   // >>> import hashlib
-  // >>> list(hashlib.sha224(bytes(c)).digest())
+  // >>> list(hashlib.sha256(bytes(c)).digest())
   //
   // final output digest after merging two input digests
-  constexpr sycl::uchar digest_2[28] = { 168, 239, 85,  136, 55,  216, 197,
-                                         106, 126, 224, 146, 191, 38,  143,
-                                         213, 130, 52,  170, 14,  66,  157,
-                                         155, 179, 118, 194, 193, 205, 83 };
+  constexpr sycl::uchar digest_2[32] = {
+    113, 214, 92,  172, 46,  8,   98,  117, 164, 10, 194, 44, 201, 194, 16, 227,
+    84,  242, 232, 140, 108, 123, 137, 84,  228, 80, 56,  46, 85,  194, 83, 72
+  };
 
   sycl::default_selector s{};
   sycl::device d{ s };
@@ -47,13 +50,13 @@ main(int argc, char** argv)
   q.memcpy(in + 0, digest_0, sizeof(digest_0)).wait();
   q.memcpy(in + sizeof(digest_0), digest_1, sizeof(digest_1)).wait();
 
-  q.single_task<class kernelExampleSHA2_224>([=]() {
+  q.single_task<class kernelExampleSHA2_256>([=]() {
     sycl::uchar padded[128];
     sycl::uint parsed[32];
-    sycl::uint digest[7];
+    sycl::uint digest[8];
 
     // pad input so that it's two full message blocks
-    sha2_224::pad_input_message(in, padded);
+    sha2_256::pad_input_message(in, padded);
 
     // parse message blocks into words
 #pragma unroll 16
@@ -61,12 +64,12 @@ main(int argc, char** argv)
       parsed[i] = from_be_bytes_to_words(padded + i * 4);
     }
 
-    // now compute SHA2-224 on input words
-    sha2_224::hash(parsed, digest);
+    // now compute SHA2-256 on input words
+    sha2_256::hash(parsed, digest);
 
-    // convert SHA2-224 digest words to big endian bytes
-#pragma unroll 7
-    for (size_t i = 0; i < 7; i++) {
+    // convert SHA2-256 digest words to big endian bytes
+#pragma unroll 8
+    for (size_t i = 0; i < 8; i++) {
       from_words_to_be_bytes(*(digest + i), out + i * 4);
     }
   });
