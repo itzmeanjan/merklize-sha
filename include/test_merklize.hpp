@@ -9,24 +9,82 @@ test_merklize(sycl::queue& q)
   // testing on binary merkle tree which has 8 leaf nodes
   constexpr size_t leaf_cnt = 1 << 3;
 
+#if defined SHA1
   constexpr size_t i_size = leaf_cnt * sha1::OUT_LEN_BYTES; // in bytes
   constexpr size_t o_size = leaf_cnt * sha1::OUT_LEN_BYTES; // in bytes
+#elif defined SHA2_224
+  constexpr size_t i_size = leaf_cnt * sha2_224::OUT_LEN_BYTES; // in bytes
+  constexpr size_t o_size = leaf_cnt * sha2_224::OUT_LEN_BYTES; // in bytes
+#elif defined SHA2_256
+  constexpr size_t i_size = leaf_cnt * sha2_256::OUT_LEN_BYTES; // in bytes
+  constexpr size_t o_size = leaf_cnt * sha2_256::OUT_LEN_BYTES; // in bytes
+#endif
 
   // obtained using following code snippet run on python3 shell
   //
   // >>> import hashlib
+#if defined SHA1
+  //
   // >>> a = [0xff] * 40 # two leaf nodes
   // >>> b = list(hashlib.sha1(bytes(a)).digest()) # = [244, 67, 49, 150, 149,
   // 151, 153, 23, 160, 59, 113, 112, 73, 35, 84, 35, 135, 77, 39, 22]
+
   // >>> c = b * 2
   // >>> d = list(hashlib.sha1(bytes(c)).digest()) # = [7, 7, 30, 157, 84, 109,
   // 232, 147, 213, 85, 108, 21, 251, 107, 125, 35, 100, 216, 165, 28]
+
   // >>> e = d * 2
   // >>> f = list(hashlib.sha1(bytes(e)).digest()) # = [139, 49, 56, 44, 55, 31,
   // 24, 110, 245, 27, 105, 167, 84, 13, 218, 12, 209, 49, 184, 54]
   constexpr sycl::uchar expected[20] = { 139, 49,  56,  44,  55,  31, 24,
                                          110, 245, 27,  105, 167, 84, 13,
                                          218, 12,  209, 49,  184, 54 };
+#elif defined SHA2_224
+  //
+  // >>> a = [0xff] * 56
+  // >>> b = list(hashlib.sha224(bytes(a)).digest()); b
+  // [140, 250, 128, 28, 254, 116, 112, 113, 88, 113, 102, 5, 189, 54, 5, 27,
+  // 74, 136, 109, 48, 20, 8, 50, 168, 140, 123, 210, 114]
+
+  // >>> c = b * 2
+  // >>> d = list(hashlib.sha224(bytes(c)).digest()); d
+  // [71, 212, 232, 90, 92, 160, 135, 245, 176, 115, 198, 156, 203, 178, 147,
+  // 104, 12, 141, 40, 52, 153, 47, 215, 175, 88, 78, 74, 219]
+
+  // >>> e = d * 2
+  // >>> f = list(hashlib.sha224(bytes(e)).digest())
+
+  // >>> f
+  // [68, 112, 247, 219, 202, 225, 184, 209, 196, 9, 206, 28, 243, 98, 103, 193,
+  // 123, 100, 218, 42, 254, 195, 132, 224, 199, 116, 140, 223]
+
+  constexpr sycl::uchar expected[28] = { 68,  112, 247, 219, 202, 225, 184,
+                                         209, 196, 9,   206, 28,  243, 98,
+                                         103, 193, 123, 100, 218, 42,  254,
+                                         195, 132, 224, 199, 116, 140, 223 };
+#elif defined SHA2_256
+  //
+  // >>> a = [0xff] * 64
+  // >>> b = list(hashlib.sha256(bytes(a)).digest()); b
+  // [134, 103, 231, 24, 41, 78, 158, 13, 241, 211, 6, 0, 186, 62, 235, 32, 31,
+  // 118, 74, 173, 45, 173, 114, 116, 134, 67, 228, 162, 133, 225, 209, 247]
+
+  // >>> c = b * 2
+  // >>> d = list(hashlib.sha256(bytes(c)).digest()); d
+  // [55, 93, 108, 123, 40, 10, 30, 48, 249, 104, 219, 29, 148, 141, 160, 249,
+  // 119, 191, 145, 57, 176, 213, 81, 103, 97, 172, 135, 71, 0, 32, 138, 186]
+
+  // >>> e = d * 2
+  // >>> f = list(hashlib.sha256(bytes(e)).digest())
+
+  // >>> f
+  // [190, 27, 112, 21, 237, 80, 215, 73, 10, 81, 241, 177, 29, 255, 128, 74,
+  // 68, 64, 119, 92, 200, 8, 185, 207, 210, 97, 87, 128, 92, 31, 142, 134]
+  constexpr sycl::uchar expected[32] = {
+    190, 27, 112, 21, 237, 80, 215, 73,  10,  81, 241, 177, 29, 255, 128, 74,
+    68,  64, 119, 92, 200, 8,  185, 207, 210, 97, 87,  128, 92, 31,  142, 134
+  };
+#endif
 
   // acquire resources
   sycl::uchar* in_0 = (sycl::uchar*)sycl::malloc_shared(i_size, q);
@@ -37,7 +95,7 @@ test_merklize(sycl::queue& q)
   // prepare input bytes
   q.memset(in_0, 0xff, i_size).wait();
   // I'm doing this intensionally just to check that
-  // first 20 -bytes are never touched by any work-items !
+  // first digest bytes are never touched by any work-items !
   q.memset(out_0, 0, o_size).wait();
 
   // convert input bytes to hash words !
@@ -66,15 +124,40 @@ test_merklize(sycl::queue& q)
     from_words_to_be_bytes(num, out_1 + (i << 2));
   }
 
-  // first 20 -bytes should never be touched !
-  for (size_t i = 0; i < sha1::OUT_LEN_BYTES; i++) {
+  // first digest should never be touched !
+  for (size_t i = 0; i <
+
+#if defined SHA1
+                     sha1::OUT_LEN_BYTES
+#elif defined SHA2_224
+                     sha2_224::OUT_LEN_BYTES
+#elif defined SHA2_256
+                     sha2_256::OUT_LEN_BYTES
+#endif
+
+       ;
+
+       i++) {
     assert(*(out_1 + i) == 0);
   }
 
   // then comes root of merkle tree !
+
+#if defined SHA1
   for (size_t i = sha1::OUT_LEN_BYTES, j = 0;
        i < (sha1::OUT_LEN_BYTES << 1) && j < sha1::OUT_LEN_BYTES;
-       i++, j++) {
+       i++, j++)
+#elif defined SHA2_224
+  for (size_t i = sha2_224::OUT_LEN_BYTES, j = 0;
+       i < (sha2_224::OUT_LEN_BYTES << 1) && j < sha2_224::OUT_LEN_BYTES;
+       i++, j++)
+#elif defined SHA2_256
+  for (size_t i = sha2_256::OUT_LEN_BYTES, j = 0;
+       i < (sha2_256::OUT_LEN_BYTES << 1) && j < sha2_256::OUT_LEN_BYTES;
+       i++, j++)
+#endif
+
+  {
     assert(*(out_1 + i) == expected[j]);
   }
 

@@ -4,7 +4,12 @@
 #include <random>
 
 // Benchmarks binary merklization implementation --- collects motivation from
-// https://github.com/itzmeanjan/blake3/blob/e2a1340a9a7972854889d494b450d72c2198cace/include/merklize.hpp#L4-L12
+// https://github.com/itzmeanjan/blake3/blob/e2a1340/include/bench_merklize.hpp#L6-L10
+//
+// Which SHA variant of 2-to-1 hash function to be used in a compile-time
+// decision using preprocessor directives
+//
+// If none chosen, SHA2-256 is chosen by default !
 void
 benchmark_merklize(sycl::queue& q,
                    size_t leaf_cnt,
@@ -16,8 +21,16 @@ benchmark_merklize(sycl::queue& q,
   // required to be merklized
   assert(leaf_cnt >= (1 << 20));
 
-  const size_t i_size = leaf_cnt * sha1::OUT_LEN_BYTES;
-  const size_t o_size = leaf_cnt * sha1::OUT_LEN_BYTES;
+#if defined SHA1
+  const size_t i_size = leaf_cnt * sha1::OUT_LEN_BYTES; // in bytes
+  const size_t o_size = leaf_cnt * sha1::OUT_LEN_BYTES; // in bytes
+#elif defined SHA2_224
+  const size_t i_size = leaf_cnt * sha2_224::OUT_LEN_BYTES; // in bytes
+  const size_t o_size = leaf_cnt * sha2_224::OUT_LEN_BYTES; // in bytes
+#elif defined SHA2_256
+  const size_t i_size = leaf_cnt * sha2_256::OUT_LEN_BYTES; // in bytes
+  const size_t o_size = leaf_cnt * sha2_256::OUT_LEN_BYTES; // in bytes
+#endif
 
   // allocate resources
   sycl::uint* i_h = static_cast<sycl::uint*>(sycl::malloc_host(i_size, q));
@@ -27,8 +40,8 @@ benchmark_merklize(sycl::queue& q,
 
   // Set all intermediate nodes to zero bytes,
   //
-  // I'll make use of this fact later to assert that first 20 -bytes will never
-  // be touched by any work-item
+  // I'll make use of this fact later to assert that first digest bytes (
+  // different for each SHA variant ) will never be touched by any work-item
   q.memset(o_d, 0, o_size).wait();
 
   {
@@ -56,8 +69,21 @@ benchmark_merklize(sycl::queue& q,
   // time device to host data tx command
   ts_2 = time_event(evt_1);
 
-  // ensuring that first 20 -bytes are never touched by any work-items
-  for (size_t i = 0; i < (sha1::OUT_LEN_BYTES >> 2); i++) {
+  // ensuring that first digest bytes ( different for each SHA variant ) are
+  // never touched by any work-items
+  for (size_t i = 0; i < (
+
+#if defined SHA1
+                           sha1::OUT_LEN_BYTES
+#elif defined SHA2_224
+                           sha2_224::OUT_LEN_BYTES
+#elif defined SHA2_256
+                           sha2_256::OUT_LEN_BYTES
+#endif
+
+                           >> 2);
+
+       i++) {
     assert(*(o_h + i) == 0);
   }
 

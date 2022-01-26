@@ -38,8 +38,17 @@ main(int argc, char** argv)
 
   double* ts = (double*)std::malloc(sizeof(double) * 3);
 
+#if defined SHA1
   std::cout << "\nBenchmarking Binary Merklization using SHA1" << std::endl
             << std::endl;
+#elif defined SHA2_224
+  std::cout << "\nBenchmarking Binary Merklization using SHA2-224" << std::endl
+            << std::endl;
+#elif defined SHA2_256
+  std::cout << "\nBenchmarking Binary Merklization using SHA2-256" << std::endl
+            << std::endl;
+#endif
+
   std::cout << std::setw(16) << std::right << "leaf count"
             << "\t\t" << std::setw(16) << std::right << "execution time"
             << "\t\t" << std::setw(16) << std::right << "host-to-device tx time"

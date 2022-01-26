@@ -2,13 +2,13 @@
 #include "utils.hpp"
 #include <CL/sycl.hpp>
 
-namespace sha2_256 {
+namespace sha2_224 {
 
-// SHA2-256 specific input/ output width constants, taken from
+// SHA2-224 specific input/ output width constants, taken from
 // section 1's figure 1 of Secure Hash Standard
 // http://dx.doi.org/10.6028/NIST.FIPS.180-4
-constexpr size_t IN_LEN_BITS = 512;
-constexpr size_t IN_LEN_BYTES = 64;
+constexpr size_t IN_LEN_BITS = 448;
+constexpr size_t IN_LEN_BYTES = 56;
 
 constexpr size_t OUT_LEN_BITS = IN_LEN_BITS >> 1;
 constexpr size_t OUT_LEN_BYTES = IN_LEN_BYTES >> 1;
@@ -16,7 +16,7 @@ constexpr size_t OUT_LEN_BYTES = IN_LEN_BYTES >> 1;
 constexpr size_t WORD_SIZE_BITS = 32;
 constexpr size_t WORD_SIZE_BYTES = 4;
 
-// SHA2-256 variant uses 64 words as constants, which are
+// SHA2-224 variant uses 64 words as constants, which are
 // specified in section 4.2.2 of Secure Hash Standard
 // http://dx.doi.org/10.6028/NIST.FIPS.180-4
 constexpr sycl::uint K[64] = {
@@ -33,11 +33,11 @@ constexpr sycl::uint K[64] = {
   0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
 };
 
-// Initial hash values for SHA2-256, as specified in section 5.3.3 of Secure
+// Initial hash values for SHA2-224, as specified in section 5.3.2 of Secure
 // Hash Standard http://dx.doi.org/10.6028/NIST.FIPS.180-4
 constexpr sycl::uint IV_0[8] = {
-  0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
-  0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
+  0xc1059ed8, 0x367cd507, 0x3070dd17, 0xf70e5939,
+  0xffc00b31, 0x68581511, 0x64f98fa7, 0xbefa4fa4
 };
 
 // SHA2 function, defined in section 4.1.2 of Secure Hash Standard
@@ -92,9 +92,9 @@ inline sycl::uint
   return rotr(x, 17) ^ rotr(x, 19) ^ (x >> 10);
 }
 
-// Given 512 -bits of input ( two SHA2-256 digests concatenated ), this function
-// appends 1 -bit, required 447 -many 0 -bit and finally 64 -bits representing
-// input message length ( = 512 ) in bits, making total of 1024 bits padded
+// Given 448 -bits of input ( two SHA2-224 digests concatenated ), this function
+// appends 1 -bit, required 511 -many 0 -bit and finally 64 -bits representing
+// input message length ( = 448 ) in bits, making total of 1024 bits padded
 // input, which will be now parsed into words & hashed.
 //
 // See section 5.1.1 of Secure Hash Standard
@@ -103,44 +103,43 @@ void
 pad_input_message(const sycl::uchar* __restrict in,
                   sycl::uchar* const __restrict out)
 {
-  // copy 512 -bits of original input to output memory allocation
+  // copy 448 -bits of original input to output memory allocation
   //
   // try to (partially) parallelize this loop execution, due to absense of
   // loop carried dependencies
-#pragma unroll 16
-  for (size_t i = 0; i < 64; i++) {
+#pragma unroll 8
+  for (size_t i = 0; i < 56; i++) {
     *(out + i) = *(in + i);
   }
 
-  constexpr size_t offset = 64;
+  constexpr size_t offset = 56;
 
-  // then setting 65 -th byte, as defined in section 5.1.1 of sha2 specification
+  // then setting 57 -th byte, as defined in section 5.1.1 of sha2 specification
   *(out + offset) = 0b10000000;
 
-  // now setting next 61 bytes to zero
+  // now setting next 69 bytes to zero
   //
-  // 61 being prime number, I can't partially unroll this loop
-  // execution, so relying on compiler to decide what should/ can be done
+  // relying on compiler to decide if this loop can be parallelized
 #pragma unroll
-  for (size_t i = 1; i < 62; i++) {
+  for (size_t i = 1; i < 70; i++) {
     *(out + offset + i) = 0;
   }
 
   // setting last two bytes of total 128 -bytes output, where
   // original length of input ( in bits ) is kept
   //
-  // so last two bytes denote 512 = length of input being hashed
-  *(out + 126) = 0b00000010;
-  *(out + 127) = 0b00000000;
+  // so last two bytes denote 448 = length of input being hashed
+  *(out + 126) = 0b00000001;
+  *(out + 127) = 0b11000000;
 }
 
-// When input message is interpreted in terms of SHA2-256 words ( = 32 -bit wide
-// ) input padding involves adding 16 new words, which is just same as done in 👆
+// When input message is interpreted in terms of SHA2-224 words ( = 32 -bit wide
+// ) input padding involves adding 18 new words, which is just same as done in 👆
 // `pad_input_message`, but 4 consecutive big endian bytes are now interpreted
 // as one word
 //
-// Output of this function is 32 -words, where first 16 words are original input
-// ( = 512 bits ) and last 16 words are padding
+// Output of this function is 32 -words, where first 14 words are original input
+// ( = 448 bits ) and last 18 words are padding
 //
 // See section 5.1.1 of Secure Hash Standard
 // http://dx.doi.org/10.6028/NIST.FIPS.180-4
@@ -148,47 +147,28 @@ void
 pad_input_message(const sycl::uint* __restrict in,
                   sycl::uint* const __restrict out)
 {
-  // copy first 64 -bytes = 16 words ( sha2-256 words are 32 -bit wide )
+  // copy first 56 -bytes = 14 words ( sha2-224 words are 32 -bit wide )
   // from input to output memory allocation
   //
   // this loop execution can be fully parallelized
-#pragma unroll 16
-  for (size_t i = 0; i < 16; i++) {
+#pragma unroll 14
+  for (size_t i = 0; i < 14; i++) {
     *(out + i) = *(in + i);
   }
 
-  constexpr size_t offset = 16;
+  constexpr size_t offset = 14;
 
-  // setting 16 -th word
+  // setting 15 -th word
   *(out + offset) = 0b10000000 << 24;
 
-  // next 14 words are set to 0, due to padding requirement
-#pragma unroll 14
-  for (size_t i = 1; i < 15; i++) {
+  // next 16 words are set to 0, due to padding requirement
+#pragma unroll 16
+  for (size_t i = 1; i < 17; i++) {
     *(out + offset + i) = 0;
   }
 
-  // finally last word set to length of input in bits ( = 512 )
-  *(out + 31) = 0 | 0b00000010 << 8;
-}
-
-// Each of four consecutive big endian bytes of 1024 -bit padded input are
-// interpreted as SHA2-256 word ( = 32 -bit ), making total of 32 words as
-// output
-//
-// See section 5.2.1 of Secure Hash Standard
-// http://dx.doi.org/10.6028/NIST.FIPS.180-4
-void
-parse_message_words(const sycl::uchar* __restrict in,
-                    sycl::uint* const __restrict out)
-{
-  // attempt to partially parallelize this loop execution
-  //
-  // no loop carried dependency !
-#pragma unroll 16
-  for (size_t i = 0; i < 32; i++) {
-    *(out + i) = from_be_bytes_to_words(in + i * 4);
-  }
+  // finally last word set to length of input in bits ( = 448 )
+  *(out + 31) = 0 | 0b00000001 << 8 | 0b11000000;
 }
 
 // Given 512 -bit input message block, it prepares 64 message schedules
@@ -218,10 +198,10 @@ prepare_message_schedule(const sycl::uint* __restrict in,
 }
 
 // Takes two padded, parsed input message blocks ( = 1024 -bit ) and computes
-// SHA2-256 digest ( = 256 -bit ) on input in two rounds ( because two message
+// SHA2-224 digest ( = 224 -bit ) on input in two rounds ( because two message
 // blocks are processed sequentially )
 //
-// See algorithm defined in section 6.2.2 of Secure Hash Standard
+// See algorithm defined in section 6.3 of Secure Hash Standard
 // http://dx.doi.org/10.6028/NIST.FIPS.180-4
 void
 hash(const sycl::uint* __restrict in, sycl::uint* const __restrict digest)
@@ -285,10 +265,10 @@ hash(const sycl::uint* __restrict in, sycl::uint* const __restrict digest)
     hash_state[7] += h;
   }
 
-  // write 256 -bit digest back to allocated memory --- final hash state after
+  // write 224 -bit digest back to allocated memory --- final hash state after
   // consuming two message blocks
-#pragma unroll 8
-  for (size_t i = 0; i < 8; i++) {
+#pragma unroll 7
+  for (size_t i = 0; i < 7; i++) {
     *(digest + i) = hash_state[i];
   }
 }
