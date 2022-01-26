@@ -16,7 +16,10 @@
 #endif
 
 // Binary merklization --- collects motivation from
-// https://github.com/itzmeanjan/blake3/blob/e2a1340a9a7972854889d494b450d72c2198cace/include/merklize.hpp#L4-L12
+// https://github.com/itzmeanjan/blake3/blob/e2a1340/include/merklize.hpp#L4-L12
+//
+// Choice of SHA variant as 2-to-1 hash function is compile-time decision using
+// preprocessor directives, while default choice is SHA2-256
 sycl::cl_ulong
 merklize(sycl::queue& q,
          const sycl::uint* __restrict leaf_nodes,

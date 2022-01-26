@@ -4,7 +4,12 @@
 #include <random>
 
 // Benchmarks binary merklization implementation --- collects motivation from
-// https://github.com/itzmeanjan/blake3/blob/e2a1340a9a7972854889d494b450d72c2198cace/include/merklize.hpp#L4-L12
+// https://github.com/itzmeanjan/blake3/blob/e2a1340/include/bench_merklize.hpp#L6-L10
+//
+// Which SHA variant of 2-to-1 hash function to be used in a compile-time
+// decision using preprocessor directives
+//
+// If none chosen, SHA2-256 is chosen by default !
 void
 benchmark_merklize(sycl::queue& q,
                    size_t leaf_cnt,
@@ -35,8 +40,8 @@ benchmark_merklize(sycl::queue& q,
 
   // Set all intermediate nodes to zero bytes,
   //
-  // I'll make use of this fact later to assert that first digest bytes will
-  // never be touched by any work-item
+  // I'll make use of this fact later to assert that first digest bytes (
+  // different for each SHA variant ) will never be touched by any work-item
   q.memset(o_d, 0, o_size).wait();
 
   {
@@ -64,7 +69,8 @@ benchmark_merklize(sycl::queue& q,
   // time device to host data tx command
   ts_2 = time_event(evt_1);
 
-  // ensuring that first digest bytes are never touched by any work-items
+  // ensuring that first digest bytes ( different for each SHA variant ) are
+  // never touched by any work-items
   for (size_t i = 0; i < (
 
 #if defined SHA1
