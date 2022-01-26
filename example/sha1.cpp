@@ -5,13 +5,14 @@
 int
 main(int argc, char** argv)
 {
-  // a = [0xff] * 20
+  // $ python3
+  // >>> a = [0xff] * 20
   //
   // first input digest
   constexpr sycl::uchar digest_0[20] = { 255, 255, 255, 255, 255, 255, 255,
                                          255, 255, 255, 255, 255, 255, 255,
                                          255, 255, 255, 255, 255, 255 };
-  // b = [0x0f] * 20
+  // >>> b = [0x0f] * 20
   //
   // second input digest
   constexpr sycl::uchar digest_1[20] = {
