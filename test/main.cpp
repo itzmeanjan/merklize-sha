@@ -2,6 +2,7 @@
 #include "test_sha1.hpp"
 #include "test_sha2_224.hpp"
 #include "test_sha2_256.hpp"
+#include "test_sha2_384.hpp"
 #include <iostream>
 
 int
@@ -18,13 +19,16 @@ main(int argc, char** argv)
             << std::endl;
 
   test_sha1(q);
-  std::cout << "passed SHA1 test !" << std::endl;
+  std::cout << "passed SHA1     test !" << std::endl;
 
   test_sha2_224(q);
   std::cout << "passed SHA2-224 test !" << std::endl;
 
   test_sha2_256(q);
   std::cout << "passed SHA2-256 test !" << std::endl;
+
+  test_sha2_384(q);
+  std::cout << "passed SHA2-384 test !" << std::endl;
 
   test_merklize(q);
 
