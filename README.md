@@ -91,6 +91,7 @@ I've accompanied each hash function implementation along with binary merklizatio
 SHA=sha1 make; make clean
 SHA=sha2_224 make; make clean
 SHA=sha2_256 make; make clean
+SHA=sha2_384 make; make clean
 ```
 
 ## Benchmarks
@@ -111,5 +112,9 @@ I'm keeping binary merklization benchmark results of
   - [Nvidia GPU(s)](results/sha2-256/nvidia_gpu.md)
   - [Intel CPU(s)](results/sha2-256/intel_cpu.md)
   - [Intel GPU(s)](results/sha2-256/intel_gpu.md)
+- SHA2-384
+  - [Nvidia GPU(s)](results/sha2-384/nvidia_gpu.md)
+  - [Intel CPU(s)](results/sha2-384/intel_cpu.md)
+  - [Intel GPU(s)](results/sha2-384/intel_gpu.md)
 
 obtained after executing them on multiple accelerators.
