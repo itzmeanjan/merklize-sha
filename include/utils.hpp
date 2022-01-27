@@ -13,6 +13,21 @@ rotr(sycl::uint x, size_t n)
   return (x >> n) | (x << (32 - n));
 }
 
+// Circular right shift of 64 -bit SHA2 word, by n bit places
+//
+// Ensure that n < 64
+//
+// Pretty much same as above definition, just works
+// with different word size ( = 64 bit )
+//
+// See section 3.2's point 4 in Secure Hash Standard
+// http://dx.doi.org/10.6028/NIST.FIPS.180-4
+inline sycl::ulong
+rotr(sycl::ulong x, size_t n)
+{
+  return (x >> n) | (x << (64 - n));
+}
+
 // Circular left shift of 32 -bit word, by n bit places
 //
 // Make sure n < 32
@@ -23,6 +38,21 @@ inline sycl::uint
 rotl(sycl::uint x, size_t n)
 {
   return (x << n) | (x >> (32 - n));
+}
+
+// Circular left shift of 64 -bit SHA2 word, by n bit places
+//
+// Ensure that n < 64
+//
+// Pretty much same as above definition, just works
+// with different word size ( = 64 bit )
+//
+// See section 3.2's point 4 in Secure Hash Standard
+// http://dx.doi.org/10.6028/NIST.FIPS.180-4
+inline sycl::ulong
+rotl(sycl::ulong x, size_t n)
+{
+  return (x << n) | (x >> (64 - n));
 }
 
 // Profile execution time of some command, whose submission resulted into
