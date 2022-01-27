@@ -75,13 +75,14 @@ InstalledDir: /home/ubuntu/sycl_workspace/llvm/build/bin
 
 If you happen to be interested in 2-to-1 hash implementation of
 
-- [SHA1](https://github.com/itzmeanjan/merklize-sha/blob/c0a8c0155b5bed04a7693b815d257acb68effcb8/example/sha1.cpp)
-- [SHA2-224](https://github.com/itzmeanjan/merklize-sha/blob/c03e42c0502a9d8104609c9f64033afbf6eac81a/example/sha2_224.cpp)
-- [SHA2-256](https://github.com/itzmeanjan/merklize-sha/blob/c03e42c0502a9d8104609c9f64033afbf6eac81a/example/sha2_256.cpp)
+- [SHA1](https://github.com/itzmeanjan/merklize-sha/blob/8f711fc/example/sha1.cpp)
+- [SHA2-224](https://github.com/itzmeanjan/merklize-sha/blob/8f711fc/example/sha2_224.cpp)
+- [SHA2-256](https://github.com/itzmeanjan/merklize-sha/blob/8f711fc/example/sha2_256.cpp)
+- [SHA2-384](https://github.com/itzmeanjan/merklize-sha/blob/8f711fc/example/sha2_384.cpp)
 
 where two digests of respective hash functions are input, in byte concatenated form, to `hash( ... )` function, consider taking a look at above hyperlinked examples.
 
-You will probably like to see how binary merklization kernels use these 2-to-1 hash functions; see [here](https://github.com/itzmeanjan/merklize-sha/blob/f2eb91733e193de9913e7cb9622c199b77534fcc/include/merklize.hpp)
+You will probably like to see how binary merklization kernels use these 2-to-1 hash functions; see [here](https://github.com/itzmeanjan/merklize-sha/blob/8f711fc/include/merklize.hpp)
 
 ## Tests
 
