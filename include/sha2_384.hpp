@@ -208,4 +208,53 @@ prepare_message_schedule(const sycl::ulong* __restrict in,
   }
 }
 
+// Given two concatenated SHA2-384 digests are padded ( to 1024 bit message
+// block ) and parsed ( to sixteen 64 -bit words ), this function produces 48
+// -bytes SHA2-384 digest, as six 64 -bit words
+//
+// This is 2-to-1 hash function, which computes hash of two SHA2-384 digests
+//
+// See section 6.5 of Secure Hash Standard
+// http://dx.doi.org/10.6028/NIST.FIPS.180-4
+void
+hash(const sycl::ulong* __restrict in, sycl::ulong* const __restrict digest)
+{
+  // step 1) prepare 80 message words
+  sycl::ulong msg_schld[80];
+  prepare_message_schedule(in, msg_schld);
+
+  // step 2) initialize eight working variables
+  sycl::ulong a = IV_0[0];
+  sycl::ulong b = IV_0[1];
+  sycl::ulong c = IV_0[2];
+  sycl::ulong d = IV_0[3];
+  sycl::ulong e = IV_0[4];
+  sycl::ulong f = IV_0[5];
+  sycl::ulong g = IV_0[6];
+  sycl::ulong h = IV_0[7];
+
+  // step 3) mix scheduled message words into initial hash state
+  for (size_t i = 0; i < 80; i++) {
+    sycl::ulong tmp0 = h + Σ_1(e) + ch(e, f, g) + K[i] + msg_schld[i];
+    sycl::ulong tmp1 = Σ_0(a) + maj(a, b, c);
+
+    h = g;
+    g = f;
+    f = e;
+    e = d + tmp0;
+    d = c;
+    c = b;
+    b = a;
+    a = tmp0 + tmp1;
+  }
+
+  // step 4) finally write 48 -bytes digest back to allocated memory
+  *(digest + 0) = IV_0[0] + a;
+  *(digest + 1) = IV_0[1] + b;
+  *(digest + 2) = IV_0[2] + c;
+  *(digest + 3) = IV_0[3] + d;
+  *(digest + 4) = IV_0[4] + e;
+  *(digest + 5) = IV_0[5] + f;
+}
+
 }
