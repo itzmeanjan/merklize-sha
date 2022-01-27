@@ -185,4 +185,27 @@ pad_input_message(const sycl::ulong* __restrict in,
   *(out + 15) = 0ul | 0b00000011ul << 8;
 }
 
+// From sixteen message words in a mesage block, prepares message
+// schedule of 80 message words, for mixing into hash state
+//
+// See step 1 of algorithm defined in section 6.4.2 of Secure Hash Standard
+// http://dx.doi.org/10.6028/NIST.FIPS.180-4
+void
+prepare_message_schedule(const sycl::ulong* __restrict in,
+                         sycl::ulong* const __restrict out)
+{
+#pragma unroll 8
+  for (size_t i = 0; i < 16; i++) {
+    *(out + i) = *(in + i);
+  }
+
+#pragma unroll 8
+  for (size_t i = 16; i < 80; i++) {
+    const sycl::ulong tmp0 = σ_1(*(out + (i - 2))) + *(out + (i - 7));
+    const sycl::ulong tmp1 = σ_0(*(out + (i - 15))) + *(out + (i - 16));
+
+    *(out + i) = tmp0 + tmp1;
+  }
+}
+
 }
