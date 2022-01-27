@@ -4,6 +4,18 @@
 
 namespace sha2_384 {
 
+// SHA2-384 specific input/ output width constants, taken from
+// section 1's figure 1 of Secure Hash Standard
+// http://dx.doi.org/10.6028/NIST.FIPS.180-4
+constexpr size_t IN_LEN_BITS = 768;
+constexpr size_t IN_LEN_BYTES = 96;
+
+constexpr size_t OUT_LEN_BITS = IN_LEN_BITS >> 1;
+constexpr size_t OUT_LEN_BYTES = IN_LEN_BYTES >> 1;
+
+constexpr size_t WORD_SIZE_BITS = 64;
+constexpr size_t WORD_SIZE_BYTES = 8;
+
 // SHA2-{384, 512, 512/ 224, 512/ 256} constants
 //
 // See section 4.2.3 of Secure Hash Standard
