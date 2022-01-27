@@ -58,7 +58,7 @@ main(int argc, char** argv)
     // parse message blocks into words
 #pragma unroll 16
     for (size_t i = 0; i < 32; i++) {
-      parsed[i] = from_be_bytes_to_words(padded + i * 4);
+      parsed[i] = from_be_bytes_to_u32_words(padded + i * 4);
     }
 
     // now compute SHA2-224 on input words

@@ -109,7 +109,7 @@ test_merklize(sycl::queue& q)
   // I'm thinking correctly !
 #pragma unroll 8
   for (size_t i = 0; i < (i_size >> 2); i++) {
-    *(in_1 + i) = from_be_bytes_to_words(in_0 + i * 4);
+    *(in_1 + i) = from_be_bytes_to_u32_words(in_0 + i * 4);
   }
 
   // wait until completely merklized !
