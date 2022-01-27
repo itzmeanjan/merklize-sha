@@ -51,7 +51,7 @@ test_sha2_224(sycl::queue& q)
     // big endian bytes are interpreted as SHA2-224 word ( = 32 -bit )
 #pragma unroll 16
     for (size_t i = 0; i < 32; i++) {
-      parsed[i] = from_be_bytes_to_words(padded + i * 4);
+      parsed[i] = from_be_bytes_to_u32_words(padded + i * 4);
     }
 
     sha2_224::hash(parsed, digest);

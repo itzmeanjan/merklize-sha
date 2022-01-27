@@ -73,7 +73,7 @@ time_event(sycl::event& evt)
 // This function can be used for converting four contiguous big endian bytes
 // into 32 -bit word
 inline sycl::uint
-from_be_bytes_to_words(const sycl::uchar* in)
+from_be_bytes_to_u32_words(const sycl::uchar* in)
 {
   return (static_cast<sycl::uint>(*(in + 0)) << 24) |
          (static_cast<sycl::uint>(*(in + 1)) << 16) |

@@ -167,7 +167,7 @@ parse_message_words(const sycl::uchar* __restrict in,
   // no loop carried dependency !
 #pragma unroll 16
   for (size_t i = 0; i < 16; i++) {
-    *(out + i) = from_be_bytes_to_words(in + i * 4);
+    *(out + i) = from_be_bytes_to_u32_words(in + i * 4);
   }
 }
 
