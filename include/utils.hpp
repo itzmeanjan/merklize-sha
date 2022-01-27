@@ -81,6 +81,20 @@ from_be_bytes_to_words(const sycl::uchar* in)
          (static_cast<sycl::uint>(*(in + 3)) << 0);
 }
 
+// Used for converting eight consecutive big endian bytes to 64 -bit word
+inline sycl::ulong
+from_be_bytes_to_u64_words(const sycl::uchar* in)
+{
+  return (static_cast<sycl::ulong>(*(in + 0)) << 56) |
+         (static_cast<sycl::ulong>(*(in + 1)) << 48) |
+         (static_cast<sycl::ulong>(*(in + 2)) << 40) |
+         (static_cast<sycl::ulong>(*(in + 3)) << 32) |
+         (static_cast<sycl::ulong>(*(in + 4)) << 24) |
+         (static_cast<sycl::ulong>(*(in + 5)) << 16) |
+         (static_cast<sycl::ulong>(*(in + 6)) << 8) |
+         (static_cast<sycl::ulong>(*(in + 7)) << 0);
+}
+
 // This function can be used for converting 32 -bit word to four
 // consecutive big endian bytes
 inline void
@@ -90,4 +104,18 @@ from_words_to_be_bytes(const sycl::uint word, sycl::uchar* const out)
   *(out + 1) = static_cast<sycl::uchar>((word >> 16) & 0xff);
   *(out + 2) = static_cast<sycl::uchar>((word >> 8) & 0xff);
   *(out + 3) = static_cast<sycl::uchar>((word >> 0) & 0xff);
+}
+
+// Used for converting one 64 -bit word to, eight consecutive big endian bytes
+inline void
+from_words_to_be_bytes(const sycl::ulong word, sycl::uchar* const out)
+{
+  *(out + 0) = static_cast<sycl::uchar>((word >> 56) & 0xff);
+  *(out + 1) = static_cast<sycl::uchar>((word >> 48) & 0xff);
+  *(out + 2) = static_cast<sycl::uchar>((word >> 40) & 0xff);
+  *(out + 3) = static_cast<sycl::uchar>((word >> 32) & 0xff);
+  *(out + 4) = static_cast<sycl::uchar>((word >> 24) & 0xff);
+  *(out + 5) = static_cast<sycl::uchar>((word >> 16) & 0xff);
+  *(out + 6) = static_cast<sycl::uchar>((word >> 8) & 0xff);
+  *(out + 7) = static_cast<sycl::uchar>((word >> 0) & 0xff);
 }
