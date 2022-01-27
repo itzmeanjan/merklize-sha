@@ -113,4 +113,76 @@ inline sycl::ulong
   return rotr(x, 19) ^ rotr(x, 61) ^ (x >> 6);
 }
 
+// Padding input message ( = 768 -bits ), which is nothing but
+// two SHA2-384 digests ( read each digest is 48 -bytes ) concatenated,
+// such that padded message becomes a 1024 -bit block, which can be parsed in
+// later phase
+//
+// See section 5.1.2 of Secure Hash Standard
+// http://dx.doi.org/10.6028/NIST.FIPS.180-4
+void
+pad_input_message(const sycl::uchar* __restrict in,
+                  sycl::uchar* const __restrict out)
+{
+  // partially parallelize copying of 96 input bytes to output
+#pragma unroll 16
+  for (size_t i = 0; i < 96; i++) {
+    *(out + i) = *(in + i);
+  }
+
+  constexpr size_t offset = 96;
+
+  // then append a 1 bit, at 97 -th bytes position
+  *(out + offset) = 0b10000000;
+
+  // after that append 29 zero bytes
+  //
+  // letting compiler decide how to unroll this loop, because loop iteration
+  // count ( = 29 ) is a prime number
+#pragma unroll
+  for (size_t i = 1; i < 30; i++) {
+    *(out + offset + i) = 0;
+  }
+
+  // finally last two bytes keeping length of input ( = 768 -bit )
+  *(out + 126) = 0b00000011;
+  *(out + 127) = 0b00000000;
+}
+
+// When two SHA2-384 digests are represented in word form ( = 64 -bit word size
+// ), they're input as 12 consecutive words, which are now padded such that
+// output is 16 words, making total of a single message block ( = 1024 bit )
+//
+// See section 5.1.2 of Secure Hash Standard
+// http://dx.doi.org/10.6028/NIST.FIPS.180-4
+void
+pad_input_message(const sycl::ulong* __restrict in,
+                  sycl::ulong* const __restrict out)
+{
+  // copying first 12 words ( = SHA2-384 64 -bit wide words )
+  // from input to padded output allocation
+#pragma unroll 12
+  for (size_t i = 0; i < 12; i++) {
+    *(out + i) = *(in + i);
+  }
+
+  constexpr size_t offset = 12;
+
+  // then appending 1 -bit at end of input message words
+  //
+  // note, here I'm working with 64 -bit word
+  *(out + offset) = 0b10000000ul << 56;
+
+  // then add two zero words, making first 15 words of output
+  // message block set
+#pragma unroll 2
+  for (size_t i = 1; i < 3; i++) {
+    *(out + offset + i) = 0;
+  }
+
+  // finally last message word ( = 16 -th ) keeps length of input
+  // in bits ( = 768 )
+  *(out + 15) = 0ul | 0b00000011ul << 8;
+}
+
 }
