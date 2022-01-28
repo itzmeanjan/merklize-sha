@@ -1,6 +1,8 @@
 #pragma once
 
-#if !(defined SHA1 || defined SHA2_224 || defined SHA2_256 || defined SHA2_384)
+#if !(defined SHA1 || defined SHA2_224 || defined SHA2_256 ||                  \
+      defined SHA2_384 || defined SHA2_512 || defined SHA2_512_224 ||          \
+      defined SHA2_512_256)
 #define SHA2_256
 #endif
 
@@ -16,6 +18,15 @@
 #elif defined SHA2_384
 #include "sha2_384.hpp"
 #pragma message "Choosing to compile Merklization with SHA2-384 !"
+#elif defined SHA2_512
+#include "sha2_512.hpp"
+#pragma message "Choosing to compile Merklization with SHA2-512 !"
+#elif defined SHA2_512_224
+#include "sha2_512_224.hpp"
+#pragma message "Choosing to compile Merklization with SHA2-512/224 !"
+#elif defined SHA2_512_256
+#include "sha2_512_256.hpp"
+#pragma message "Choosing to compile Merklization with SHA2-512/256 !"
 #endif
 
 // Binary merklization --- collects motivation from
@@ -28,7 +39,8 @@ merklize(sycl::queue& q,
 
 #if defined SHA1 || defined SHA2_224 || defined SHA2_256
          const sycl::uint* __restrict leaf_nodes,
-#elif defined SHA2_384
+#elif defined SHA2_384 || defined SHA2_512 || defined SHA2_512_224 ||          \
+  defined SHA2_512_256
          const sycl::ulong* __restrict leaf_nodes,
 #endif
 
@@ -37,7 +49,8 @@ merklize(sycl::queue& q,
 
 #if defined SHA1 || defined SHA2_224 || defined SHA2_256
          sycl::uint* const __restrict intermediates,
-#elif defined SHA2_384
+#elif defined SHA2_384 || defined SHA2_512 || defined SHA2_512_224 ||          \
+  defined SHA2_512_256
          sycl::ulong* const __restrict intermediates,
 #endif
 
@@ -63,10 +76,28 @@ merklize(sycl::queue& q,
 #elif defined SHA2_384
   assert(i_size == leaf_cnt * sha2_384::OUT_LEN_BYTES);
   assert(o_size == (itmd_cnt + 1) * sha2_384::OUT_LEN_BYTES);
+#elif defined SHA2_512
+  assert(i_size == leaf_cnt * sha2_512::OUT_LEN_BYTES);
+  assert(o_size == (itmd_cnt + 1) * sha2_512::OUT_LEN_BYTES);
+#elif defined SHA2_512_224
+  assert(i_size == leaf_cnt * sha2_512_224::OUT_LEN_BYTES);
+  assert(o_size == (itmd_cnt + 1) * 32);
+#elif defined SHA2_512_256
+  assert(i_size == leaf_cnt * sha2_512_256::OUT_LEN_BYTES);
+  assert(o_size == (itmd_cnt + 1) * sha2_512_256::OUT_LEN_BYTES);
 #endif
 
   // both input and output allocation has same size
+#if defined SHA1 || defined SHA2_224 || defined SHA2_256 ||                    \
+  defined SHA2_384 || defined SHA2_512 || defined SHA2_512_256
+
   assert(i_size == o_size);
+
+#elif defined SHA2_512_224
+
+  assert(i_size + (leaf_cnt << 2) == o_size);
+
+#endif
 
   // only tree with power of 2 many leaf nodes
   // can be merklized by this implementation
@@ -89,7 +120,8 @@ merklize(sycl::queue& q,
   //
   // note that `o_size` is in terms of bytes
   const size_t elm_cnt = o_size >> 2;
-#elif defined SHA2_384
+#elif defined SHA2_384 || defined SHA2_512 || defined SHA2_512_224 ||          \
+  defined SHA2_512_256
   // # -of 64 -bit unsigned integers, which can be contiguously placed
   // on output memory allocation
   //
@@ -129,6 +161,21 @@ merklize(sycl::queue& q,
         const size_t out_idx = idx * (sha2_384::OUT_LEN_BYTES >> 3);
 
         sycl::ulong padded[16];
+#elif defined SHA2_512
+        const size_t in_idx = idx * (sha2_512::IN_LEN_BYTES >> 3);
+        const size_t out_idx = idx * (sha2_512::OUT_LEN_BYTES >> 3);
+
+        sycl::ulong padded[32];
+#elif defined SHA2_512_224
+        const size_t in_idx = idx * (sha2_512_224::IN_LEN_BYTES >> 3);
+        const size_t out_idx = idx * (32 >> 3);
+
+        sycl::ulong padded[16];
+#elif defined SHA2_512_256
+        const size_t in_idx = idx * (sha2_512_256::IN_LEN_BYTES >> 3);
+        const size_t out_idx = idx * (sha2_512_256::OUT_LEN_BYTES >> 3);
+
+        sycl::ulong padded[16];
 #endif
 
 #if defined SHA1
@@ -143,6 +190,15 @@ merklize(sycl::queue& q,
 #elif defined SHA2_384
         sha2_384::pad_input_message(leaf_nodes + i_offset + in_idx, padded);
         sha2_384::hash(padded, intermediates + o_offset + out_idx);
+#elif defined SHA2_512
+        sha2_512::pad_input_message(leaf_nodes + i_offset + in_idx, padded);
+        sha2_512::hash(padded, intermediates + o_offset + out_idx);
+#elif defined SHA2_512_224
+        sha2_512_224::pad_input_message(leaf_nodes + i_offset + in_idx, padded);
+        sha2_512_224::hash(padded, intermediates + o_offset + out_idx);
+#elif defined SHA2_512_256
+        sha2_512_256::pad_input_message(leaf_nodes + i_offset + in_idx, padded);
+        sha2_512_256::hash(padded, intermediates + o_offset + out_idx);
 #endif
       });
   });
@@ -204,6 +260,61 @@ merklize(sycl::queue& q,
           const size_t out_idx = idx * (sha2_384::OUT_LEN_BYTES >> 3);
 
           sycl::ulong padded[16];
+#elif defined SHA2_512
+          const size_t in_idx = idx * (sha2_512::IN_LEN_BYTES >> 3);
+          const size_t out_idx = idx * (sha2_512::OUT_LEN_BYTES >> 3);
+
+          sycl::ulong padded[32];
+#elif defined SHA2_512_224
+          const size_t in_idx = idx * (64 >> 3);
+          const size_t out_idx = idx * (32 >> 3);
+
+          // in following section, I'm extracting first 28 -bytes
+          // from two consecutive 32 -bytes SHA2-512/224 digests and
+          // concatenating them in 64 -bit word form such that total seven 64
+          // -bit words are holding total 56 -bytes (non-padded) input to 2-to-1
+          // SHA2-512/224 hash function
+          //
+          // so from eight 64 -bit words I'll prepare seven 64 -bit words
+          // which will be 2-to-1 hashed using SHA2-512/224 ( for binary
+          // merklization )
+          //
+          // that means first digest is leaf child and second one is right child
+          // of some parent node whose hash is being computed by this work-item
+          sycl::ulong in_words[7];
+
+          // pointer aliasing for ease of typing ( and understanding )
+          sycl::ulong* in_ptr = intermediates + i_offset_ + in_idx;
+
+          // first three 64 -bit words of first SHA2-512/224 digest
+          // are taken as they are
+          in_words[0] = *(in_ptr + 0);
+          in_words[1] = *(in_ptr + 1);
+          in_words[2] = *(in_ptr + 2);
+          // then  MSB 32 -bits of last word of first digest
+          // and MSB 32 -bits of first word of second digest are
+          // concatenated into single 64 -bit word
+          in_words[3] = (((*(in_ptr + 3) >> 32) & 0xfffffffful) << 32) |
+                        ((*(in_ptr + 4) >> 32) & 0xfffffffful);
+
+          // then next consecutive 192 -bits are taken such that
+          // it can be stored in three consecutive 64 -bit words
+          in_words[4] = ((*(in_ptr + 4) & 0xfffffffful) << 32) |
+                        ((*(in_ptr + 5) >> 32) & 0xfffffffful);
+
+          in_words[5] = ((*(in_ptr + 5) & 0xfffffffful) << 32) |
+                        ((*(in_ptr + 6) >> 32) & 0xfffffffful);
+
+          in_words[6] = ((*(in_ptr + 6) & 0xfffffffful) << 32) |
+                        ((*(in_ptr + 7) >> 32) & 0xfffffffful);
+
+          sycl::ulong padded[16];
+
+#elif defined SHA2_512_256
+          const size_t in_idx = idx * (sha2_512_256::IN_LEN_BYTES >> 3);
+          const size_t out_idx = idx * (sha2_512_256::OUT_LEN_BYTES >> 3);
+
+          sycl::ulong padded[16];
 #endif
 
 #if defined SHA1
@@ -221,6 +332,17 @@ merklize(sycl::queue& q,
           sha2_384::pad_input_message(intermediates + i_offset_ + in_idx,
                                       padded);
           sha2_384::hash(padded, intermediates + o_offset_ + out_idx);
+#elif defined SHA2_512
+          sha2_512::pad_input_message(intermediates + i_offset_ + in_idx,
+                                      padded);
+          sha2_512::hash(padded, intermediates + o_offset_ + out_idx);
+#elif defined SHA2_512_224
+          sha2_512_224::pad_input_message(in_words, padded);
+          sha2_512_224::hash(padded, intermediates + o_offset_ + out_idx);
+#elif defined SHA2_512_256
+          sha2_512_256::pad_input_message(intermediates + i_offset_ + in_idx,
+                                          padded);
+          sha2_512_256::hash(padded, intermediates + o_offset_ + out_idx);
 #endif
         });
     });

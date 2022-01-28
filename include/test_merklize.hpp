@@ -18,6 +18,20 @@ test_merklize(sycl::queue& q)
 #elif defined SHA2_256
   constexpr size_t i_size = leaf_cnt * sha2_256::OUT_LEN_BYTES; // in bytes
   constexpr size_t o_size = leaf_cnt * sha2_256::OUT_LEN_BYTES; // in bytes
+#elif defined SHA2_384
+  constexpr size_t i_size = leaf_cnt * sha2_384::OUT_LEN_BYTES; // in bytes
+  constexpr size_t o_size = leaf_cnt * sha2_384::OUT_LEN_BYTES; // in bytes
+#elif defined SHA2_512
+  constexpr size_t i_size = leaf_cnt * sha2_512::OUT_LEN_BYTES; // in bytes
+  constexpr size_t o_size = leaf_cnt * sha2_512::OUT_LEN_BYTES; // in bytes
+#elif defined SHA2_512_224
+  constexpr size_t i_size = leaf_cnt * sha2_512_224::OUT_LEN_BYTES; // in bytes
+  constexpr size_t o_size =
+    leaf_cnt * 32; // in bytes
+                   // note digest is actually 28 -bytes, so drop last 4 !
+#elif defined SHA2_512_256
+  constexpr size_t i_size = leaf_cnt * sha2_512_256::OUT_LEN_BYTES; // in bytes
+  constexpr size_t o_size = leaf_cnt * sha2_512_256::OUT_LEN_BYTES; // in bytes
 #endif
 
   // obtained using following code snippet run on python3 shell
@@ -84,13 +98,127 @@ test_merklize(sycl::queue& q)
     190, 27, 112, 21, 237, 80, 215, 73,  10,  81, 241, 177, 29, 255, 128, 74,
     68,  64, 119, 92, 200, 8,  185, 207, 210, 97, 87,  128, 92, 31,  142, 134
   };
+#elif defined SHA2_384
+  //
+  // >>> a = [0xff] * 96
+  // >>> b = list(hashlib.sha384(bytes(a)).digest()); b
+  // [120, 195, 4, 101, 32, 184, 165, 150, 9, 221, 16, 126, 43, 186, 64, 107,
+  // 143, 124, 119, 179, 53, 135, 31, 39, 146, 115, 75, 158, 151, 254, 247, 182,
+  // 91, 31, 17, 212, 123, 219, 246, 75, 217, 24, 111, 77, 215, 195, 125, 165]
+
+  // >>> c = b * 2
+  // >>> d = list(hashlib.sha384(bytes(c)).digest()); d
+  // [227, 29, 252, 255, 250, 146, 71, 38, 152, 231, 169, 100, 72, 182, 172, 85,
+  // 39, 82, 76, 213, 182, 23, 141, 45, 195, 141, 134, 156, 50, 73, 29, 223,
+  // 251, 156, 145, 97, 16, 6, 12, 104, 80, 1, 254, 85, 175, 233, 154, 150]
+
+  // >>> e = d * 2
+  // >>> f = list(hashlib.sha384(bytes(e)).digest())
+
+  // >>> f
+  // [239, 157, 55, 183, 110, 217, 152, 174, 198, 161, 104, 34, 255, 210, 42,
+  // 127, 109, 225, 231, 137, 155, 208, 1, 12, 92, 229, 164, 16, 115, 202, 32,
+  // 70, 178, 181, 244, 155, 15, 182, 228, 7, 163, 103, 145, 117, 126, 76, 22,
+  // 60]
+  constexpr sycl::uchar expected[48] = {
+    239, 157, 55,  183, 110, 217, 152, 174, 198, 161, 104, 34,
+    255, 210, 42,  127, 109, 225, 231, 137, 155, 208, 1,   12,
+    92,  229, 164, 16,  115, 202, 32,  70,  178, 181, 244, 155,
+    15,  182, 228, 7,   163, 103, 145, 117, 126, 76,  22,  60
+  };
+#elif defined SHA2_512
+  //
+  // >>> a = [0xff] * 128
+  // >>> b = list(hashlib.sha512(bytes(a)).digest()); b
+  // [90, 202, 240, 111, 93, 209, 209, 7, 184, 27, 155, 117, 22, 212, 84, 227,
+  // 4, 207, 86, 153, 208, 31, 254, 102, 160, 26, 213, 84, 207, 176, 219, 137,
+  // 107, 188, 22, 224, 139, 212, 251, 202, 179, 99, 100, 144, 158, 223, 80,
+  // 236, 182, 200, 4, 39, 34, 164, 197, 148, 86, 217, 4, 130, 68, 205, 87, 240]
+
+  // >>> c = b * 2
+  // >>> d = list(hashlib.sha512(bytes(c)).digest()); d
+  // [29, 250, 176, 241, 104, 30, 96, 125, 162, 189, 87, 132, 239, 233, 197, 38,
+  // 115, 203, 5, 77, 121, 19, 221, 76, 158, 205, 2, 246, 119, 235, 142, 168,
+  // 208, 86, 184, 121, 23, 124, 5, 35, 213, 226, 12, 28, 89, 184, 202, 238, 78,
+  // 226, 3, 191, 191, 67, 130, 141, 106, 49, 60, 195, 37, 126, 191, 246]
+
+  // >>> e = d * 2
+  // >>> f = list(hashlib.sha512(bytes(e)).digest())
+
+  // >>> f
+  // [16, 89, 255, 34, 217, 58, 55, 214, 124, 223, 84, 72, 189, 98, 82, 87, 164,
+  // 252, 176, 254, 76, 1, 212, 167, 85, 125, 123, 2, 88, 197, 250, 70, 142, 62,
+  // 29, 73, 251, 23, 13, 164, 62, 38, 67, 243, 171, 8, 222, 186, 25, 108, 214,
+  // 177, 241, 243, 178, 130, 121, 21, 200, 224, 122, 187, 59, 187]
+  constexpr sycl::uchar expected[64] = {
+    16,  89,  255, 34,  217, 58,  55,  214, 124, 223, 84,  72,  189,
+    98,  82,  87,  164, 252, 176, 254, 76,  1,   212, 167, 85,  125,
+    123, 2,   88,  197, 250, 70,  142, 62,  29,  73,  251, 23,  13,
+    164, 62,  38,  67,  243, 171, 8,   222, 186, 25,  108, 214, 177,
+    241, 243, 178, 130, 121, 21,  200, 224, 122, 187, 59,  187
+  };
+#elif defined SHA2_512_224
+  //
+  // >>> a = [0xff] * 56
+  // >>> b = list(SHA512.new(data= bytes([0xff] * 56),truncate='224').digest());
+  // b [48, 203, 99, 172, 231, 234, 247, 242, 145, 165, 10, 53, 219, 85, 130,
+  // 55, 155, 52, 43, 55, 172, 78, 125, 185, 119, 230, 148, 129]
+
+  // >>> c = b * 2
+  // >>> d = list(SHA512.new(data= bytes(c),truncate='224').digest()); d
+  // [35, 211, 149, 84, 66, 218, 192, 196, 121, 52, 94, 75, 251, 40, 83, 102,
+  // 182, 23, 45, 239, 44, 2, 97, 100, 31, 26, 4, 142]
+
+  // >>> e = d * 2
+  // >>> f =  list(SHA512.new(data= bytes(e),truncate='224').digest())
+
+  // >>> f
+  // [45, 213, 101, 185, 49, 91, 242, 198, 250, 179, 90, 147, 49, 158, 113, 189,
+  // 131, 120, 67, 135, 193, 39, 110, 71, 26, 195, 63, 193]
+  constexpr sycl::uchar expected[28] = { 45,  213, 101, 185, 49,  91,  242,
+                                         198, 250, 179, 90,  147, 49,  158,
+                                         113, 189, 131, 120, 67,  135, 193,
+                                         39,  110, 71,  26,  195, 63,  193 };
+#elif defined SHA2_512_256
+  //
+  // >>> a = [0xff] * 64
+  // >>> b = list(SHA512.new(data= bytes(a),truncate='256').digest()); b
+  // [254, 218, 174, 155, 245, 143, 133, 143, 128, 130, 195, 85, 44, 169, 71,
+  // 77, 8, 123, 94, 131, 30, 38, 179, 26, 164, 7, 159, 115, 132, 111, 54, 93]
+
+  // >>> c = b * 2
+  // >>> d = list(SHA512.new(data= bytes(c),truncate='256').digest()); d
+  // [111, 152, 206, 204, 224, 191, 32, 143, 125, 172, 90, 72, 37, 40, 72, 147,
+  // 253, 199, 207, 161, 98, 76, 13, 24, 105, 250, 17, 79, 29, 58, 7, 136]
+
+  // >>> e = d * 2
+  // >>> f =  list(SHA512.new(data= bytes(e),truncate='256').digest())
+
+  // >>> f
+  // [129, 151, 248, 46, 143, 39, 163, 78, 234, 177, 146, 147, 233, 80, 172,
+  // 144, 1, 184, 229, 187, 174, 201, 189, 160, 169, 168, 64, 21, 112, 149, 72,
+  // 139]
+  constexpr sycl::uchar expected[32] = {
+    129, 151, 248, 46,  143, 39, 163, 78,  234, 177, 146,
+    147, 233, 80,  172, 144, 1,  184, 229, 187, 174, 201,
+    189, 160, 169, 168, 64,  21, 112, 149, 72,  139
+  };
 #endif
 
+#if defined SHA1 || defined SHA2_224 || defined SHA2_256
   // acquire resources
   sycl::uchar* in_0 = (sycl::uchar*)sycl::malloc_shared(i_size, q);
   sycl::uint* in_1 = (sycl::uint*)sycl::malloc_shared(i_size, q);
   sycl::uint* out_0 = (sycl::uint*)sycl::malloc_shared(o_size, q);
   sycl::uchar* out_1 = (sycl::uchar*)sycl::malloc_shared(o_size, q);
+#elif defined SHA2_384 || defined SHA2_512 || defined SHA2_512_224 ||          \
+  defined SHA2_512_256
+  // acquire resources
+  sycl::uchar* in_0 = (sycl::uchar*)sycl::malloc_shared(i_size, q);
+  sycl::ulong* in_1 = (sycl::ulong*)sycl::malloc_shared(i_size, q);
+  sycl::ulong* out_0 = (sycl::ulong*)sycl::malloc_shared(o_size, q);
+  sycl::uchar* out_1 = (sycl::uchar*)sycl::malloc_shared(o_size, q);
+#endif
 
   // prepare input bytes
   q.memset(in_0, 0xff, i_size).wait();
@@ -107,10 +235,28 @@ test_merklize(sycl::queue& q)
   //
   // but I decided to do it manually, just to be sure that
   // I'm thinking correctly !
+#if defined SHA1 || defined SHA2_224 || defined SHA2_256
+
 #pragma unroll 8
   for (size_t i = 0; i < (i_size >> 2); i++) {
-    *(in_1 + i) = from_be_bytes_to_u32_words(in_0 + i * 4);
+    *(in_1 + i) = from_be_bytes_to_u32_words(in_0 + (i << 2));
   }
+
+#elif defined SHA2_384 || defined SHA2_512 || defined SHA2_512_256
+
+#pragma unroll 8
+  for (size_t i = 0; i < (i_size >> 3); i++) {
+    *(in_1 + i) = from_be_bytes_to_u64_words(in_0 + (i << 3));
+  }
+
+#elif defined SHA2_512_224
+
+#pragma unroll 7
+  for (size_t i = 0; i < (i_size >> 3); i++) {
+    *(in_1 + i) = from_be_bytes_to_u64_words(in_0 + (i << 3));
+  }
+
+#endif
 
   // wait until completely merklized !
   merklize(
@@ -118,11 +264,24 @@ test_merklize(sycl::queue& q)
 
   // finally convert all intermediate nodes from word representation
   // to big endian byte array form
+#if defined SHA1 || defined SHA2_224 || defined SHA2_256
+
 #pragma unroll 8
   for (size_t i = 0; i < (o_size >> 2); i++) {
     const sycl::uint num = *(out_0 + i);
     from_words_to_be_bytes(num, out_1 + (i << 2));
   }
+
+#elif defined SHA2_384 || defined SHA2_512 || defined SHA2_512_224 ||          \
+  defined SHA2_512_256
+
+#pragma unroll 8
+  for (size_t i = 0; i < (o_size >> 3); i++) {
+    const sycl::ulong num = *(out_0 + i);
+    from_words_to_be_bytes(num, out_1 + (i << 3));
+  }
+
+#endif
 
   // first digest should never be touched !
   for (size_t i = 0; i <
@@ -133,6 +292,14 @@ test_merklize(sycl::queue& q)
                      sha2_224::OUT_LEN_BYTES
 #elif defined SHA2_256
                      sha2_256::OUT_LEN_BYTES
+#elif defined SHA2_384
+                     sha2_384::OUT_LEN_BYTES
+#elif defined SHA2_512
+                     sha2_512::OUT_LEN_BYTES
+#elif defined SHA2_512_224
+                     sha2_512_224::OUT_LEN_BYTES
+#elif defined SHA2_512_256
+                     sha2_512_256::OUT_LEN_BYTES
 #endif
 
        ;
@@ -154,6 +321,24 @@ test_merklize(sycl::queue& q)
 #elif defined SHA2_256
   for (size_t i = sha2_256::OUT_LEN_BYTES, j = 0;
        i < (sha2_256::OUT_LEN_BYTES << 1) && j < sha2_256::OUT_LEN_BYTES;
+       i++, j++)
+#elif defined SHA2_384
+  for (size_t i = sha2_384::OUT_LEN_BYTES, j = 0;
+       i < (sha2_384::OUT_LEN_BYTES << 1) && j < sha2_384::OUT_LEN_BYTES;
+       i++, j++)
+#elif defined SHA2_512
+  for (size_t i = sha2_512::OUT_LEN_BYTES, j = 0;
+       i < (sha2_512::OUT_LEN_BYTES << 1) && j < sha2_512::OUT_LEN_BYTES;
+       i++, j++)
+#elif defined SHA2_512_224
+  for (size_t i = sha2_512_224::OUT_LEN_BYTES + 4, j = 0;
+       i < ((sha2_512_224::OUT_LEN_BYTES << 1) + 4) &&
+       j < sha2_512_224::OUT_LEN_BYTES;
+       i++, j++)
+#elif defined SHA2_512_256
+  for (size_t i = sha2_512_256::OUT_LEN_BYTES, j = 0;
+       i < (sha2_512_256::OUT_LEN_BYTES << 1) &&
+       j < sha2_512_256::OUT_LEN_BYTES;
        i++, j++)
 #endif
 

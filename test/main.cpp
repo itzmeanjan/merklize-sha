@@ -1,9 +1,21 @@
 #include "test_merklize.hpp"
-#include "test_sha1.hpp"
-#include "test_sha2_224.hpp"
-#include "test_sha2_256.hpp"
-#include "test_sha2_384.hpp"
 #include <iostream>
+
+#if defined SHA1
+#include "test_sha1.hpp"
+#elif defined SHA2_224
+#include "test_sha2_224.hpp"
+#elif defined SHA2_256
+#include "test_sha2_256.hpp"
+#elif defined SHA2_384
+#include "test_sha2_384.hpp"
+#elif defined SHA2_512
+#include "test_sha2_512.hpp"
+#elif defined SHA2_512_224
+#include "test_sha2_512_224.hpp"
+#elif defined SHA2_512_256
+#include "test_sha2_512_256.hpp"
+#endif
 
 int
 main(int argc, char** argv)
@@ -18,17 +30,42 @@ main(int argc, char** argv)
             << std::endl
             << std::endl;
 
+#if defined SHA1
+
   test_sha1(q);
   std::cout << "passed SHA1     test !" << std::endl;
+
+#elif defined SHA2_224
 
   test_sha2_224(q);
   std::cout << "passed SHA2-224 test !" << std::endl;
 
+#elif defined SHA2_256
+
   test_sha2_256(q);
   std::cout << "passed SHA2-256 test !" << std::endl;
 
+#elif defined SHA2_384
+
   test_sha2_384(q);
   std::cout << "passed SHA2-384 test !" << std::endl;
+
+#elif defined SHA2_512
+
+  test_sha2_512(q);
+  std::cout << "passed SHA2-512 test !" << std::endl;
+
+#elif defined SHA2_512_224
+
+  test_sha2_512_224(q);
+  std::cout << "passed SHA2-512/224 test !" << std::endl;
+
+#elif defined SHA2_512_256
+
+  test_sha2_512_256(q);
+  std::cout << "passed SHA2-512/256 test !" << std::endl;
+
+#endif
 
   test_merklize(q);
 
@@ -39,6 +76,18 @@ main(int argc, char** argv)
             << std::endl;
 #elif defined SHA2_256
   std::cout << "passed binary merklization ( using SHA2-256 ) test !"
+            << std::endl;
+#elif defined SHA2_384
+  std::cout << "passed binary merklization ( using SHA2-384 ) test !"
+            << std::endl;
+#elif defined SHA2_512
+  std::cout << "passed binary merklization ( using SHA2-512 ) test !"
+            << std::endl;
+#elif defined SHA2_512_224
+  std::cout << "passed binary merklization ( using SHA2-512/224 ) test !"
+            << std::endl;
+#elif defined SHA2_512_256
+  std::cout << "passed binary merklization ( using SHA2-512/256 ) test !"
             << std::endl;
 #endif
 
