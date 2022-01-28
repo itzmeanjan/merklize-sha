@@ -14,7 +14,7 @@ constexpr size_t OUT_LEN_BYTES = IN_LEN_BYTES >> 1;
 
 // SHA2-512 -bit variant's initial hash state values
 //
-// Taken from section 5.3.4 of Secure Hash Standard
+// Taken from section 5.3.5 of Secure Hash Standard
 // http://dx.doi.org/10.6028/NIST.FIPS.180-4
 constexpr sycl::ulong IV_0[8] = { 0x6a09e667f3bcc908, 0xbb67ae8584caa73b,
                                   0x3c6ef372fe94f82b, 0xa54ff53a5f1d36f1,
