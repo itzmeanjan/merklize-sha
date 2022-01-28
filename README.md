@@ -75,24 +75,26 @@ InstalledDir: /home/ubuntu/sycl_workspace/llvm/build/bin
 
 If you happen to be interested in 2-to-1 hash implementation of
 
-- [SHA1](https://github.com/itzmeanjan/merklize-sha/blob/8f711fc/example/sha1.cpp)
-- [SHA2-224](https://github.com/itzmeanjan/merklize-sha/blob/8f711fc/example/sha2_224.cpp)
-- [SHA2-256](https://github.com/itzmeanjan/merklize-sha/blob/8f711fc/example/sha2_256.cpp)
-- [SHA2-384](https://github.com/itzmeanjan/merklize-sha/blob/8f711fc/example/sha2_384.cpp)
+- [SHA1](https://github.com/itzmeanjan/merklize-sha/blob/fd76b7a/example/sha1.cpp)
+- [SHA2-224](https://github.com/itzmeanjan/merklize-sha/blob/fd76b7a/example/sha2_224.cpp)
+- [SHA2-256](https://github.com/itzmeanjan/merklize-sha/blob/fd76b7a/example/sha2_256.cpp)
+- [SHA2-384](https://github.com/itzmeanjan/merklize-sha/blob/fd76b7a/example/sha2_384.cpp)
+- [SHA2-512](https://github.com/itzmeanjan/merklize-sha/blob/fd76b7a/example/sha2_512.cpp)
+- [SHA2-512/224](https://github.com/itzmeanjan/merklize-sha/blob/fd76b7a/example/sha2_512_224.cpp)
+- [SHA2-512/256](https://github.com/itzmeanjan/merklize-sha/blob/fd76b7a/example/sha2_512_256.cpp)
 
 where two digests of respective hash functions are input, in byte concatenated form, to `hash( ... )` function, consider taking a look at above hyperlinked examples.
 
-You will probably like to see how binary merklization kernels use these 2-to-1 hash functions; see [here](https://github.com/itzmeanjan/merklize-sha/blob/8f711fc/include/merklize.hpp)
+> Compile above examples using `dpcpp -fsycl example/<file>.cpp -I./include`
+
+You will probably like to see how binary merklization kernels use these 2-to-1 hash functions; see [here](https://github.com/itzmeanjan/merklize-sha/blob/fd76b7a/include/merklize.hpp)
 
 ## Tests
 
-I've accompanied each hash function implementation along with binary merklization using them, with test cases which can be compiled and executed as
+I've accompanied each hash function implementation along with binary merklization using them, with test cases which can be executed as
 
 ```bash
-SHA=sha1 make; make clean
-SHA=sha2_224 make; make clean
-SHA=sha2_256 make; make clean
-SHA=sha2_384 make; make clean
+bash run.sh
 ```
 
 ## Benchmarks
