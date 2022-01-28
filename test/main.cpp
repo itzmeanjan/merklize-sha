@@ -47,6 +47,9 @@ main(int argc, char** argv)
 #elif defined SHA2_384
   std::cout << "passed binary merklization ( using SHA2-384 ) test !"
             << std::endl;
+#elif defined SHA2_512
+  std::cout << "passed binary merklization ( using SHA2-512 ) test !"
+            << std::endl;
 #endif
 
   return EXIT_SUCCESS;

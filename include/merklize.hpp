@@ -1,6 +1,7 @@
 #pragma once
 
-#if !(defined SHA1 || defined SHA2_224 || defined SHA2_256 || defined SHA2_384)
+#if !(defined SHA1 || defined SHA2_224 || defined SHA2_256 ||                  \
+      defined SHA2_384 || defined SHA2_512)
 #define SHA2_256
 #endif
 
@@ -16,6 +17,9 @@
 #elif defined SHA2_384
 #include "sha2_384.hpp"
 #pragma message "Choosing to compile Merklization with SHA2-384 !"
+#elif defined SHA2_512
+#include "sha2_512.hpp"
+#pragma message "Choosing to compile Merklization with SHA2-512 !"
 #endif
 
 // Binary merklization --- collects motivation from
@@ -28,7 +32,7 @@ merklize(sycl::queue& q,
 
 #if defined SHA1 || defined SHA2_224 || defined SHA2_256
          const sycl::uint* __restrict leaf_nodes,
-#elif defined SHA2_384
+#elif defined SHA2_384 || defined SHA2_512
          const sycl::ulong* __restrict leaf_nodes,
 #endif
 
@@ -37,7 +41,7 @@ merklize(sycl::queue& q,
 
 #if defined SHA1 || defined SHA2_224 || defined SHA2_256
          sycl::uint* const __restrict intermediates,
-#elif defined SHA2_384
+#elif defined SHA2_384 || defined SHA2_512
          sycl::ulong* const __restrict intermediates,
 #endif
 
@@ -63,6 +67,9 @@ merklize(sycl::queue& q,
 #elif defined SHA2_384
   assert(i_size == leaf_cnt * sha2_384::OUT_LEN_BYTES);
   assert(o_size == (itmd_cnt + 1) * sha2_384::OUT_LEN_BYTES);
+#elif defined SHA2_512
+  assert(i_size == leaf_cnt * sha2_512::OUT_LEN_BYTES);
+  assert(o_size == (itmd_cnt + 1) * sha2_512::OUT_LEN_BYTES);
 #endif
 
   // both input and output allocation has same size
@@ -89,7 +96,7 @@ merklize(sycl::queue& q,
   //
   // note that `o_size` is in terms of bytes
   const size_t elm_cnt = o_size >> 2;
-#elif defined SHA2_384
+#elif defined SHA2_384 || defined SHA2_512
   // # -of 64 -bit unsigned integers, which can be contiguously placed
   // on output memory allocation
   //
@@ -129,6 +136,11 @@ merklize(sycl::queue& q,
         const size_t out_idx = idx * (sha2_384::OUT_LEN_BYTES >> 3);
 
         sycl::ulong padded[16];
+#elif defined SHA2_512
+        const size_t in_idx = idx * (sha2_512::IN_LEN_BYTES >> 3);
+        const size_t out_idx = idx * (sha2_512::OUT_LEN_BYTES >> 3);
+
+        sycl::ulong padded[32];
 #endif
 
 #if defined SHA1
@@ -143,6 +155,9 @@ merklize(sycl::queue& q,
 #elif defined SHA2_384
         sha2_384::pad_input_message(leaf_nodes + i_offset + in_idx, padded);
         sha2_384::hash(padded, intermediates + o_offset + out_idx);
+#elif defined SHA2_512
+        sha2_512::pad_input_message(leaf_nodes + i_offset + in_idx, padded);
+        sha2_512::hash(padded, intermediates + o_offset + out_idx);
 #endif
       });
   });
@@ -204,6 +219,11 @@ merklize(sycl::queue& q,
           const size_t out_idx = idx * (sha2_384::OUT_LEN_BYTES >> 3);
 
           sycl::ulong padded[16];
+#elif defined SHA2_512
+          const size_t in_idx = idx * (sha2_512::IN_LEN_BYTES >> 3);
+          const size_t out_idx = idx * (sha2_512::OUT_LEN_BYTES >> 3);
+
+          sycl::ulong padded[32];
 #endif
 
 #if defined SHA1
@@ -221,6 +241,10 @@ merklize(sycl::queue& q,
           sha2_384::pad_input_message(intermediates + i_offset_ + in_idx,
                                       padded);
           sha2_384::hash(padded, intermediates + o_offset_ + out_idx);
+#elif defined SHA2_512
+          sha2_512::pad_input_message(intermediates + i_offset_ + in_idx,
+                                      padded);
+          sha2_512::hash(padded, intermediates + o_offset_ + out_idx);
 #endif
         });
     });
