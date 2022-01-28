@@ -3,7 +3,7 @@
 #if !(defined SHA1 || defined SHA2_224 || defined SHA2_256 ||                  \
       defined SHA2_384 || defined SHA2_512 || defined SHA2_512_224 ||          \
       defined SHA2_512_256)
-#define SHA2_512_256
+#define SHA2_256
 #endif
 
 #if defined SHA1
