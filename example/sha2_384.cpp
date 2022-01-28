@@ -16,7 +16,7 @@ main(int argc, char** argv)
     255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255
   };
 
-  // >>> b = [0x0f] * 48
+  // >>> b = [0xff] * 48
   //
   // second input digest
   constexpr sycl::uchar digest_1[48] = {
