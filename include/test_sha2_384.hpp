@@ -58,7 +58,7 @@ test_sha2_384(sycl::queue& q)
 
     sha2_384::hash(parsed, digest);
 
-    // converting each message word of digest into eight consecutive big endian
+    // converting each message word of digest into six consecutive big endian
     // bytes, making total 48 -bytes SHA2-384 digest
 #pragma unroll 6
     for (size_t i = 0; i < 6; i++) {
