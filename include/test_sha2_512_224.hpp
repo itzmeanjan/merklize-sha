@@ -9,7 +9,7 @@ test_sha2_512_224(sycl::queue& q)
   // $ python3 -m pip install --user pycryptodome
   //
   // >>> from Crypto.Hash import SHA512
-  // >>> h = SHA512(truncate='224')
+  // >>> h = SHA512.new(truncate='224')
   // >>> h.update(bytes([i for i in range(56)]))
   // >>> list(h.digest())
   //
