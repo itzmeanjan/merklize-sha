@@ -36,6 +36,12 @@ benchmark_merklize(sycl::queue& q,
 #elif defined SHA2_512
   const size_t i_size = leaf_cnt * sha2_512::OUT_LEN_BYTES; // in bytes
   const size_t o_size = leaf_cnt * sha2_512::OUT_LEN_BYTES; // in bytes
+#elif defined SHA2_512_224
+  const size_t i_size = leaf_cnt * sha2_512_224::OUT_LEN_BYTES; // in bytes
+  const size_t o_size = leaf_cnt * 32;                          // in bytes
+#elif defined SHA2_512_256
+  const size_t i_size = leaf_cnt * sha2_512_256::OUT_LEN_BYTES; // in bytes
+  const size_t o_size = leaf_cnt * sha2_512_256::OUT_LEN_BYTES; // in bytes
 #endif
 
 #if defined SHA1 || defined SHA2_224 || defined SHA2_256
@@ -44,7 +50,8 @@ benchmark_merklize(sycl::queue& q,
   sycl::uint* o_h = static_cast<sycl::uint*>(sycl::malloc_host(o_size, q));
   sycl::uint* i_d = static_cast<sycl::uint*>(sycl::malloc_device(i_size, q));
   sycl::uint* o_d = static_cast<sycl::uint*>(sycl::malloc_device(o_size, q));
-#elif defined SHA2_384 || defined SHA2_512
+#elif defined SHA2_384 || defined SHA2_512 || defined SHA2_512_224 ||          \
+  defined SHA2_512_256
   // allocate resources
   sycl::ulong* i_h = static_cast<sycl::ulong*>(sycl::malloc_host(i_size, q));
   sycl::ulong* o_h = static_cast<sycl::ulong*>(sycl::malloc_host(o_size, q));
@@ -97,6 +104,10 @@ benchmark_merklize(sycl::queue& q,
                      (sha2_384::OUT_LEN_BYTES >> 3)
 #elif defined SHA2_512
                      (sha2_512::OUT_LEN_BYTES >> 3)
+#elif defined SHA2_512_224
+                     (32 >> 3)
+#elif defined SHA2_512_256
+                     (sha2_512_256::OUT_LEN_BYTES >> 3)
 #endif
 
          ;
