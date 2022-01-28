@@ -18,6 +18,9 @@ test_merklize(sycl::queue& q)
 #elif defined SHA2_256
   constexpr size_t i_size = leaf_cnt * sha2_256::OUT_LEN_BYTES; // in bytes
   constexpr size_t o_size = leaf_cnt * sha2_256::OUT_LEN_BYTES; // in bytes
+#elif defined SHA2_384
+  constexpr size_t i_size = leaf_cnt * sha2_384::OUT_LEN_BYTES; // in bytes
+  constexpr size_t o_size = leaf_cnt * sha2_384::OUT_LEN_BYTES; // in bytes
 #endif
 
   // obtained using following code snippet run on python3 shell
@@ -84,13 +87,49 @@ test_merklize(sycl::queue& q)
     190, 27, 112, 21, 237, 80, 215, 73,  10,  81, 241, 177, 29, 255, 128, 74,
     68,  64, 119, 92, 200, 8,  185, 207, 210, 97, 87,  128, 92, 31,  142, 134
   };
+#elif defined SHA2_384
+  //
+  // >>> a = [0xff] * 96
+  // >>> b = list(hashlib.sha384(bytes(a)).digest()); b
+  // [120, 195, 4, 101, 32, 184, 165, 150, 9, 221, 16, 126, 43, 186, 64, 107,
+  // 143, 124, 119, 179, 53, 135, 31, 39, 146, 115, 75, 158, 151, 254, 247, 182,
+  // 91, 31, 17, 212, 123, 219, 246, 75, 217, 24, 111, 77, 215, 195, 125, 165]
+
+  // >>> c = b * 2
+  // >>> d = list(hashlib.sha384(bytes(c)).digest()); d
+  // [227, 29, 252, 255, 250, 146, 71, 38, 152, 231, 169, 100, 72, 182, 172, 85,
+  // 39, 82, 76, 213, 182, 23, 141, 45, 195, 141, 134, 156, 50, 73, 29, 223,
+  // 251, 156, 145, 97, 16, 6, 12, 104, 80, 1, 254, 85, 175, 233, 154, 150]
+
+  // >>> e = d * 2
+  // >>> f = list(hashlib.sha384(bytes(e)).digest())
+
+  // >>> f
+  // [239, 157, 55, 183, 110, 217, 152, 174, 198, 161, 104, 34, 255, 210, 42,
+  // 127, 109, 225, 231, 137, 155, 208, 1, 12, 92, 229, 164, 16, 115, 202, 32,
+  // 70, 178, 181, 244, 155, 15, 182, 228, 7, 163, 103, 145, 117, 126, 76, 22,
+  // 60]
+  constexpr sycl::uchar expected[48] = {
+    239, 157, 55,  183, 110, 217, 152, 174, 198, 161, 104, 34,
+    255, 210, 42,  127, 109, 225, 231, 137, 155, 208, 1,   12,
+    92,  229, 164, 16,  115, 202, 32,  70,  178, 181, 244, 155,
+    15,  182, 228, 7,   163, 103, 145, 117, 126, 76,  22,  60
+  };
 #endif
 
+#if defined SHA1 || defined SHA2_224 || defined SHA2_256
   // acquire resources
   sycl::uchar* in_0 = (sycl::uchar*)sycl::malloc_shared(i_size, q);
   sycl::uint* in_1 = (sycl::uint*)sycl::malloc_shared(i_size, q);
   sycl::uint* out_0 = (sycl::uint*)sycl::malloc_shared(o_size, q);
   sycl::uchar* out_1 = (sycl::uchar*)sycl::malloc_shared(o_size, q);
+#elif defined SHA2_384
+  // acquire resources
+  sycl::uchar* in_0 = (sycl::uchar*)sycl::malloc_shared(i_size, q);
+  sycl::ulong* in_1 = (sycl::ulong*)sycl::malloc_shared(i_size, q);
+  sycl::ulong* out_0 = (sycl::ulong*)sycl::malloc_shared(o_size, q);
+  sycl::uchar* out_1 = (sycl::uchar*)sycl::malloc_shared(o_size, q);
+#endif
 
   // prepare input bytes
   q.memset(in_0, 0xff, i_size).wait();
@@ -107,10 +146,21 @@ test_merklize(sycl::queue& q)
   //
   // but I decided to do it manually, just to be sure that
   // I'm thinking correctly !
+#if defined SHA1 || defined SHA2_224 || defined SHA2_256
+
 #pragma unroll 8
   for (size_t i = 0; i < (i_size >> 2); i++) {
-    *(in_1 + i) = from_be_bytes_to_u32_words(in_0 + i * 4);
+    *(in_1 + i) = from_be_bytes_to_u32_words(in_0 + (i << 2));
   }
+
+#elif defined SHA2_384
+
+#pragma unroll 8
+  for (size_t i = 0; i < (i_size >> 3); i++) {
+    *(in_1 + i) = from_be_bytes_to_u64_words(in_0 + (i << 3));
+  }
+
+#endif
 
   // wait until completely merklized !
   merklize(
@@ -118,11 +168,23 @@ test_merklize(sycl::queue& q)
 
   // finally convert all intermediate nodes from word representation
   // to big endian byte array form
+#if defined SHA1 || defined SHA2_224 || defined SHA2_256
+
 #pragma unroll 8
   for (size_t i = 0; i < (o_size >> 2); i++) {
     const sycl::uint num = *(out_0 + i);
     from_words_to_be_bytes(num, out_1 + (i << 2));
   }
+
+#elif defined SHA2_384
+
+#pragma unroll 8
+  for (size_t i = 0; i < (o_size >> 3); i++) {
+    const sycl::ulong num = *(out_0 + i);
+    from_words_to_be_bytes(num, out_1 + (i << 3));
+  }
+
+#endif
 
   // first digest should never be touched !
   for (size_t i = 0; i <
@@ -133,6 +195,8 @@ test_merklize(sycl::queue& q)
                      sha2_224::OUT_LEN_BYTES
 #elif defined SHA2_256
                      sha2_256::OUT_LEN_BYTES
+#elif defined SHA2_384
+                     sha2_384::OUT_LEN_BYTES
 #endif
 
        ;
@@ -154,6 +218,10 @@ test_merklize(sycl::queue& q)
 #elif defined SHA2_256
   for (size_t i = sha2_256::OUT_LEN_BYTES, j = 0;
        i < (sha2_256::OUT_LEN_BYTES << 1) && j < sha2_256::OUT_LEN_BYTES;
+       i++, j++)
+#elif defined SHA2_384
+  for (size_t i = sha2_384::OUT_LEN_BYTES, j = 0;
+       i < (sha2_384::OUT_LEN_BYTES << 1) && j < sha2_384::OUT_LEN_BYTES;
        i++, j++)
 #endif
 
