@@ -119,5 +119,17 @@ I'm keeping binary merklization benchmark results of
   - [Nvidia GPU(s)](results/sha2-384/nvidia_gpu.md)
   - [Intel CPU(s)](results/sha2-384/intel_cpu.md)
   - [Intel GPU(s)](results/sha2-384/intel_gpu.md)
+- SHA2-512
+  - [Nvidia GPU(s)](results/sha2-512/nvidia_gpu.md)
+  - [Intel CPU(s)](results/sha2-512/intel_cpu.md)
+  - [Intel GPU(s)](results/sha2-512/intel_gpu.md)
+- SHA2-512/224
+  - [Nvidia GPU(s)](results/sha2-512-224/nvidia_gpu.md)
+  - [Intel CPU(s)](results/sha2-512-224/intel_cpu.md)
+  - [Intel GPU(s)](results/sha2-512-224/intel_gpu.md)
+- SHA2-512/256
+  - [Nvidia GPU(s)](results/sha2-512-256/nvidia_gpu.md)
+  - [Intel CPU(s)](results/sha2-512-256/intel_cpu.md)
+  - [Intel GPU(s)](results/sha2-512-256/intel_gpu.md)
 
 obtained after executing them on multiple accelerators.
