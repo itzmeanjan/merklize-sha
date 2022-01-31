@@ -38,3 +38,35 @@ inline void
     }
   }
 }
+
+// keccak-p[b, n_r] step mapping
+//
+// Input is 5 x 5 x 64 state array and output is modified state array
+//
+// See specification of `ρ` step mapping function in section 3.2.2
+// of http://dx.doi.org/10.6028/NIST.FIPS.202
+inline void
+ρ(const std::bitset<64>** state_in, std::bitset<64>** const state_out)
+{
+  // step 1 of algorithm 2 in http://dx.doi.org/10.6028/NIST.FIPS.202
+  state_out[0][0] = state_in[0][0];
+
+  // step 2 of algorithm 2 in http://dx.doi.org/10.6028/NIST.FIPS.202
+  size_t x = 1;
+  size_t y = 0;
+
+  // step 3 of algorithm 2 in http://dx.doi.org/10.6028/NIST.FIPS.202
+  for (size_t t = 0; t < 24; t++) {
+    // step 3a of algorithm 2 in http://dx.doi.org/10.6028/NIST.FIPS.202
+    for (size_t z = 0; z < 64; z++) {
+      size_t _z = 63 - (z - (((t + 1) * (t + 2)) / 2)) % 64;
+
+      state_out[x][y][z] = state_in[x][y][_z];
+    }
+
+    // step 3b of algorithm 2 in http://dx.doi.org/10.6028/NIST.FIPS.202
+    const size_t tmp = x;
+    x = y;
+    y = (2 * tmp + 3 * y) % 5;
+  }
+}
