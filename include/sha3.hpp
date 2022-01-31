@@ -237,10 +237,10 @@ keccak_p(std::bitset<1600>& s)
 }
 
 // Modern C++ feature to compile-time ensure that template argument position,
-// passed to following `bit_at` routine ∈ [0, 8)
+// passed to following `{get,set}_bit_at` routine ∈ [0, 8)
 template<typename T>
 constexpr bool
-is_less_than(T pos)
+is_valid_bit_pos(T pos)
 {
   return pos >= 0 && pos < 8;
 }
@@ -254,9 +254,23 @@ is_less_than(T pos)
 // then assert(byte[0] == 1 && byte[7] = 0)
 template<uint8_t pos>
 inline bool
-bit_at(sycl::uchar byte) requires(is_less_than(pos))
+get_bit_at(sycl::uchar byte) requires(is_valid_bit_pos(pos))
 {
   return (byte >> (7 - pos)) & 0b1;
+}
+
+// Sets bit value at one of 8 possible bit positions in a byte
+//
+// Note indexing of bits in specified bytes is performed left to
+// right ascending order
+//
+// Meaning if byte = 0b11110000,
+// then assert(byte[0] == 1 && byte[7] = 0)
+template<uint8_t pos>
+inline sycl::uchar
+set_bit_at(bool bit) requires(is_valid_bit_pos(pos))
+{
+  return static_cast<sycl::uchar>(bit) << (7 - pos);
 }
 
 // Return value many zero bits to be padded to original message bit string
