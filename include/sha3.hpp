@@ -235,3 +235,42 @@ keccak_p(std::bitset<1600>& s)
   // step 3 of algorithm 7
   to_bit_string(state, s);
 }
+
+// Modern C++ feature to compile-time ensure that template argument position,
+// passed to following `bit_at` routine ∈ [0, 8)
+template<typename T>
+constexpr bool
+is_less_than(T pos)
+{
+  return pos >= 0 && pos < 8;
+}
+
+// Extracts bit from one of 8 possible bit positions of a byte
+//
+// Note indexing of bits in specified bytes is performed left to
+// right ascending order
+//
+// Meaning if byte = 0b11110000,
+// then assert(byte[0] == 1 && byte[7] = 0)
+template<uint8_t pos>
+inline bool
+bit_at(sycl::uchar byte) requires(is_less_than(pos))
+{
+  return (byte >> (7 - pos)) & 0b1;
+}
+
+// Return value many zero bits to be padded to original message bit string
+//
+// Note, this function itself doesn't perform any padding, instead  it's just
+// used for deciding how many zero bits to be padded before keccak_p[b, n_r]
+// permutation can be applied
+//
+// In times, it can be the case that no zero bits to be padded i.e. returns 0
+// from this function when those cases are encountered !
+//
+// See algorithm 9 in section 5.1 of http://dx.doi.org/10.6028/NIST.FIPS.202
+inline size_t
+pad(size_t rate, size_t in_len)
+{
+  return -(in_len + 2) % rate;
+}
