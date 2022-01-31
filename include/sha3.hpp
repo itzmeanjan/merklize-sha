@@ -9,7 +9,7 @@
 // See specification of `θ` step mapping function in section 3.2.1
 // of http://dx.doi.org/10.6028/NIST.FIPS.202
 inline void
-θ(std::bitset<64>** const state)
+θ(std::bitset<64> state[5][5])
 {
   std::bitset<64> c[5];
 
@@ -46,7 +46,7 @@ inline void
 // See specification of `ρ` step mapping function in section 3.2.2
 // of http://dx.doi.org/10.6028/NIST.FIPS.202
 inline void
-ρ(const std::bitset<64>** state_in, std::bitset<64>** const state_out)
+ρ(std::bitset<64> state_in[5][5], std::bitset<64> state_out[5][5])
 {
   // step 1 of algorithm 2
   state_out[0][0] = state_in[0][0];
@@ -78,7 +78,7 @@ inline void
 // See specification of `π` step mapping function in section 3.2.3
 // of http://dx.doi.org/10.6028/NIST.FIPS.202
 inline void
-π(const std::bitset<64>** state_in, std::bitset<64>** const state_out)
+π(std::bitset<64> state_in[5][5], std::bitset<64> state_out[5][5])
 {
   // step 1 of algorithm 3
   for (size_t z = 0; z < 64; z++) {
@@ -101,7 +101,7 @@ inline void
 // See specification of `χ` step mapping function in section 3.2.4
 // of http://dx.doi.org/10.6028/NIST.FIPS.202
 inline void
-χ(const std::bitset<64>** state_in, std::bitset<64>** const state_out)
+χ(std::bitset<64> state_in[5][5], std::bitset<64> state_out[5][5])
 {
   // step 1 of algorithm 4
   for (size_t x = 0; x < 5; x++) {
@@ -146,7 +146,7 @@ rc(size_t t)
 // See specification of `ι` step mapping function in section 3.2.5
 // of http://dx.doi.org/10.6028/NIST.FIPS.202
 inline void
-ι(std::bitset<64>** const state, size_t round_index)
+ι(std::bitset<64> state[5][5], size_t round_index)
 {
   // step 2 of algorithm 6
   std::bitset<64> RC;
@@ -159,4 +159,79 @@ inline void
 
   // step 4 of algorithm 6
   state[0][0] ^= RC;
+}
+
+// keccak-p[b, n_r] round function, which applies all five
+// step mapping functions in order, updating state array
+//
+// See section 3.3 of http://dx.doi.org/10.6028/NIST.FIPS.202
+void
+rnd(std::bitset<64> state[5][5], size_t round_index)
+{
+  std::bitset<64> tmp[5][5];
+
+  θ(state);
+  ρ(state, tmp);
+  π(tmp, state);
+  χ(state, tmp);
+  ι(tmp, round_index);
+
+#pragma unroll 5
+  for (size_t x = 0; x < 5; x++) {
+#pragma unroll 5
+    for (size_t y = 0; y < 5; y++) {
+      state[x][y] = tmp[x][y];
+    }
+  }
+}
+
+// Routine for converting bit string to 5 x 5 x 64 state array
+// using technique defined in section 3.1.2 of
+// http://dx.doi.org/10.6028/NIST.FIPS.202
+void
+to_state_array(std::bitset<1600>& s, std::bitset<64> state[5][5])
+{
+  for (size_t x = 0; x < 5; x++) {
+    for (size_t y = 0; y < 5; y++) {
+      for (size_t z = 0; z < 64; z++) {
+        state[x][y][63 - z] = s[1599 - (64 * (5 * y + x) + z)];
+      }
+    }
+  }
+}
+
+// Routine for converting 5 x 5 x 64 state array to bit string
+// using method defined in section 3.1.3 of
+// http://dx.doi.org/10.6028/NIST.FIPS.202
+void
+to_bit_string(std::bitset<64> state[5][5], std::bitset<1600>& s)
+{
+  size_t s_idx = 1599;
+
+  for (size_t y = 0; y < 5; y++) {
+    for (size_t x = 0; x < 5; x++) {
+      for (size_t z = 0; z < 64; z++) {
+        s[s_idx--] = state[x][y][63 - z];
+      }
+    }
+  }
+}
+
+// keccak-p[b, n_r] permutation, applying n_r ( = 24 ) rounds
+// on state bit array ( = s ), using algorithm 7 defined in
+// section 3.3 of http://dx.doi.org/10.6028/NIST.FIPS.202
+void
+keccak_p(std::bitset<1600>& s)
+{
+  // step 1 of algorithm 7
+  std::bitset<64> state[5][5];
+  to_state_array(s, state);
+
+  // step 2 of algorithm 7
+  for (size_t i = 0; i < 24; i++) {
+    rnd(state, i);
+  }
+
+  // step 3 of algorithm 7
+  to_bit_string(state, s);
 }
