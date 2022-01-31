@@ -48,4 +48,24 @@ prepare_digest_bytes(std::bitset<1600>& s, sycl::uchar* const out)
   }
 }
 
+// SHA3-256 2-to-1 hasher, where input is 64 contiguous bytes which is hashed
+// to produce 32 -bytes output
+//
+// This function itself doesn't do much instead of calling other functions
+// which actually
+// - prepares state bit array from input byte array
+// - permutes input using `keccak-p[b, n_r]`
+// - truncates first 256 -bits from state bit array
+//
+// See section 6.1 of http://dx.doi.org/10.6028/NIST.FIPS.202
+void
+hash(const sycl::uchar* __restrict in, sycl::uchar* const __restrict digest)
+{
+  std::bitset<1600> s;
+
+  prepare_bit_string(in, s);
+  keccak_p(s);
+  prepare_digest_bytes(s, digest);
+}
+
 }
