@@ -93,3 +93,26 @@ inline void
     // a single slice
   }
 }
+
+// keccak-p[b, n_r] step mapping
+//
+// Input is 5 x 5 x 64 state array and output is modified state array
+//
+// See specification of `χ` step mapping function in section 3.2.4
+// of http://dx.doi.org/10.6028/NIST.FIPS.202
+inline void
+χ(const std::bitset<64>** state_in, std::bitset<64>** const state_out)
+{
+  // step 1 of algorithm 4 in http://dx.doi.org/10.6028/NIST.FIPS.202
+  for (size_t x = 0; x < 5; x++) {
+    for (size_t y = 0; y < 5; y++) {
+      for (size_t z = 0; z < 64; z++) {
+        bool v0 = state_in[(x + 1) % 5][y][63 - z] ^ 1;
+        bool v1 = state_in[(x + 2) % 5][y][63 - z];
+        bool v2 = v0 & v1;
+
+        state_out[x][y][63 - z] = state_in[x][y][63 - z] ^ v2;
+      }
+    }
+  }
+}
