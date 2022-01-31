@@ -70,3 +70,26 @@ inline void
     y = (2 * tmp + 3 * y) % 5;
   }
 }
+
+// keccak-p[b, n_r] step mapping
+//
+// Input is 5 x 5 x 64 state array and output is modified state array
+//
+// See specification of `π` step mapping function in section 3.2.3
+// of http://dx.doi.org/10.6028/NIST.FIPS.202
+inline void
+π(const std::bitset<64>** state_in, std::bitset<64>** const state_out)
+{
+  // step 1 of algorithm 3 in http://dx.doi.org/10.6028/NIST.FIPS.202
+  for (size_t z = 0; z < 64; z++) {
+    // a single slice
+#pragma unroll 5
+    for (size_t x = 0; x < 5; x++) {
+#pragma unroll 5
+      for (size_t y = 0; y < 5; y++) {
+        state_out[x][y][63 - z] = state_in[(x + 3 * y) % 5][x][63 - z];
+      }
+    }
+    // a single slice
+  }
+}
