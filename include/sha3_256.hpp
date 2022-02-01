@@ -60,6 +60,29 @@ to_state_array(const sycl::uchar* __restrict in,
   }
 }
 
+// From absorbed hash state array of dimension 5 x 5 x 64, produces 32 -bytes
+// digest using method defined in section 3.1.3 of
+// http://dx.doi.org/10.6028/NIST.FIPS.202 and algorithm 11 defined in section
+// B.1 of above hyperlinked document
+void
+to_digest_bytes(const sycl::ulong* __restrict in,
+                sycl::uchar* const __restrict digest)
+{
+#pragma unroll 4
+  for (size_t i = 0; i < 4; i++) {
+    const sycl::ulong lane = in[i];
+
+    digest[(i << 3) + 0] = static_cast<sycl::uchar>((lane >> 0) & 0xffull);
+    digest[(i << 3) + 1] = static_cast<sycl::uchar>((lane >> 8) & 0xffull);
+    digest[(i << 3) + 2] = static_cast<sycl::uchar>((lane >> 16) & 0xffull);
+    digest[(i << 3) + 3] = static_cast<sycl::uchar>((lane >> 24) & 0xffull);
+    digest[(i << 3) + 4] = static_cast<sycl::uchar>((lane >> 32) & 0xffull);
+    digest[(i << 3) + 5] = static_cast<sycl::uchar>((lane >> 40) & 0xffull);
+    digest[(i << 3) + 6] = static_cast<sycl::uchar>((lane >> 48) & 0xffull);
+    digest[(i << 3) + 7] = static_cast<sycl::uchar>((lane >> 56) & 0xffull);
+  }
+}
+
 // Given two ( byte concatenated ) SHA3-256 digests ( i.e. 64 -bytes ), prepares
 // bit string of length 1600, which can be passed to keccak_p[b, n_r]
 // permutation function, in later phase
