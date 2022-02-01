@@ -28,9 +28,9 @@ static inline void
   for (size_t x = 0; x < 5; x++) {
     const sycl::ulong tmp0 = state[x] ^ state[x + 5];
     const sycl::ulong tmp1 = state[x + 10] ^ state[x + 15];
-    const sycl::ulong tmp3 = tmp0 ^ tmp1 ^ state[x + 20];
+    const sycl::ulong tmp2 = tmp0 ^ tmp1 ^ state[x + 20];
 
-    c[x] = tmp3;
+    c[x] = tmp2;
   }
 
 // see step 2 of algorithm 1
