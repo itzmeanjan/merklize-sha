@@ -3,6 +3,14 @@
 
 namespace sha3_256 {
 
+// SHA3-256 specific input/ output width constants, taken from
+// table 4's in section A.1 of http://dx.doi.org/10.6028/NIST.FIPS.202
+constexpr size_t IN_LEN_BITS = 512;
+constexpr size_t IN_LEN_BYTES = IN_LEN_BITS >> 3;
+
+constexpr size_t OUT_LEN_BITS = IN_LEN_BITS >> 1;
+constexpr size_t OUT_LEN_BYTES = IN_LEN_BYTES >> 1;
+
 // Given two ( byte concatenated ) SHA3-256 digests ( i.e. 64 -bytes ), prepares
 // bit string of length 1600, which can be passed to keccak_p[b, n_r]
 // permutation function, in later phase

@@ -32,6 +32,9 @@ test_merklize(sycl::queue& q)
 #elif defined SHA2_512_256
   constexpr size_t i_size = leaf_cnt * sha2_512_256::OUT_LEN_BYTES; // in bytes
   constexpr size_t o_size = leaf_cnt * sha2_512_256::OUT_LEN_BYTES; // in bytes
+#elif defined SHA3_256
+  constexpr size_t i_size = leaf_cnt * sha3_256::OUT_LEN_BYTES; // in bytes
+  constexpr size_t o_size = leaf_cnt * sha3_256::OUT_LEN_BYTES; // in bytes
 #endif
 
   // obtained using following code snippet run on python3 shell
@@ -203,6 +206,28 @@ test_merklize(sycl::queue& q)
     147, 233, 80,  172, 144, 1,  184, 229, 187, 174, 201,
     189, 160, 169, 168, 64,  21, 112, 149, 72,  139
   };
+#elif defined SHA3_256
+  //
+  // >>> a = [0xff] * 64
+  // >>> b = list(hashlib.sha3_256(bytes(a)).digest()); b
+  // [127, 216, 219, 145, 139, 238, 83, 121, 178, 47, 88, 60, 230, 71, 159, 120,
+  // 77, 35, 40, 22, 190, 170, 86, 66, 36, 58, 115, 74, 129, 101, 161, 90]
+
+  // >>> c = b * 2
+  // >>> d = list(hashlib.sha3_256(bytes(c)).digest()); d
+  // [105, 66, 252, 242, 214, 146, 9, 148, 126, 206, 138, 110, 64, 115, 31, 49,
+  // 54, 217, 247, 151, 154, 223, 58, 84, 111, 217, 196, 181, 72, 62, 22, 52]
+
+  // >>> e = d * 2
+  // >>> f =  list(hashlib.sha3_256(bytes(e)).digest())
+
+  // >>> f
+  // [159, 200, 74, 194, 101, 231, 247, 10, 65, 194, 250, 128, 32, 140, 171, 51,
+  // 143, 128, 183, 61, 78, 102, 179, 87, 41, 4, 59, 151, 162, 190, 109, 76]
+  constexpr sycl::uchar expected[32] = {
+    159, 200, 74,  194, 101, 231, 247, 10, 65, 194, 250, 128, 32,  140, 171, 51,
+    143, 128, 183, 61,  78,  102, 179, 87, 41, 4,   59,  151, 162, 190, 109, 76
+  };
 #endif
 
 #if defined SHA1 || defined SHA2_224 || defined SHA2_256
@@ -218,13 +243,29 @@ test_merklize(sycl::queue& q)
   sycl::ulong* in_1 = (sycl::ulong*)sycl::malloc_shared(i_size, q);
   sycl::ulong* out_0 = (sycl::ulong*)sycl::malloc_shared(o_size, q);
   sycl::uchar* out_1 = (sycl::uchar*)sycl::malloc_shared(o_size, q);
+#elif defined SHA3_256
+  // acquire resources
+  sycl::uchar* in = (sycl::uchar*)sycl::malloc_shared(i_size, q);
+  sycl::uchar* out = (sycl::uchar*)sycl::malloc_shared(o_size, q);
 #endif
+
+#if defined SHA3_256
+
+  // prepare input bytes
+  q.memset(in, 0xff, i_size).wait();
+  // I'm doing this intensionally just to check that
+  // first digest bytes are never touched by any work-items !
+  q.memset(out, 0, o_size).wait();
+
+#else
 
   // prepare input bytes
   q.memset(in_0, 0xff, i_size).wait();
   // I'm doing this intensionally just to check that
   // first digest bytes are never touched by any work-items !
   q.memset(out_0, 0, o_size).wait();
+
+#endif
 
   // convert input bytes to hash words !
   //
@@ -258,9 +299,18 @@ test_merklize(sycl::queue& q)
 
 #endif
 
+#if defined SHA3_256
+
+  // wait until completely merklized !
+  merklize(q, in, i_size, leaf_cnt, out, o_size, leaf_cnt - 1, leaf_cnt >> 1);
+
+#else
+
   // wait until completely merklized !
   merklize(
     q, in_1, i_size, leaf_cnt, out_0, o_size, leaf_cnt - 1, leaf_cnt >> 1);
+
+#endif
 
   // finally convert all intermediate nodes from word representation
   // to big endian byte array form
@@ -300,12 +350,22 @@ test_merklize(sycl::queue& q)
                      sha2_512_224::OUT_LEN_BYTES
 #elif defined SHA2_512_256
                      sha2_512_256::OUT_LEN_BYTES
+#elif defined SHA3_256
+                     sha3_256::OUT_LEN_BYTES
 #endif
 
        ;
 
        i++) {
+#if defined SHA3_256
+
+    assert(*(out + i) == 0);
+
+#else
+
     assert(*(out_1 + i) == 0);
+
+#endif
   }
 
   // then comes root of merkle tree !
@@ -340,15 +400,36 @@ test_merklize(sycl::queue& q)
        i < (sha2_512_256::OUT_LEN_BYTES << 1) &&
        j < sha2_512_256::OUT_LEN_BYTES;
        i++, j++)
+#elif defined SHA3_256
+  for (size_t i = sha3_256::OUT_LEN_BYTES, j = 0;
+       i < (sha3_256::OUT_LEN_BYTES << 1) && j < sha3_256::OUT_LEN_BYTES;
+       i++, j++)
 #endif
 
   {
+#if defined SHA3_256
+
+    assert(*(out + i) == expected[j]);
+
+#else
+
     assert(*(out_1 + i) == expected[j]);
+
+#endif
   }
 
   // ensure resources are deallocated
+#if defined SHA3_256
+
+  sycl::free(in, q);
+  sycl::free(out, q);
+
+#else
+
   sycl::free(in_0, q);
   sycl::free(in_1, q);
   sycl::free(out_0, q);
   sycl::free(out_1, q);
+
+#endif
 }

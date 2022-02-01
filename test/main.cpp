@@ -15,6 +15,8 @@
 #include "test_sha2_512_224.hpp"
 #elif defined SHA2_512_256
 #include "test_sha2_512_256.hpp"
+#elif defined SHA3_256
+#include "test_sha3_256.hpp"
 #endif
 
 int
@@ -65,6 +67,11 @@ main(int argc, char** argv)
   test_sha2_512_256(q);
   std::cout << "passed SHA2-512/256 test !" << std::endl;
 
+#elif defined SHA3_256
+
+  test_sha3_256(q);
+  std::cout << "passed SHA3-256 test !" << std::endl;
+
 #endif
 
   test_merklize(q);
@@ -88,6 +95,9 @@ main(int argc, char** argv)
             << std::endl;
 #elif defined SHA2_512_256
   std::cout << "passed binary merklization ( using SHA2-512/256 ) test !"
+            << std::endl;
+#elif defined SHA3_256
+  std::cout << "passed binary merklization ( using SHA3-256 ) test !"
             << std::endl;
 #endif
 
