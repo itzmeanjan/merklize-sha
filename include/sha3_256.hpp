@@ -11,6 +11,55 @@ constexpr size_t IN_LEN_BYTES = IN_LEN_BITS >> 3;
 constexpr size_t OUT_LEN_BITS = IN_LEN_BITS >> 1;
 constexpr size_t OUT_LEN_BYTES = IN_LEN_BYTES >> 1;
 
+// From input byte array ( = 64 bytes ) preparing 5 x 5 x 64 keccak state array
+// as twenty five 64 -bit unsigned integers
+//
+// Combined techniques adapted from section 3.1.2 of
+// http://dx.doi.org/10.6028/NIST.FIPS.202; algorithm 10
+// defined in section B.1 of above linked document
+void
+to_state_array(const sycl::uchar* __restrict in,
+               sycl::ulong* const __restrict state)
+{
+#pragma unroll 8
+  for (size_t i = 0; i < 8; i++) {
+    state[i] = static_cast<sycl::ulong>(in[(i << 3) + 7]) << 56 |
+               static_cast<sycl::ulong>(in[(i << 3) + 6]) << 48 |
+               static_cast<sycl::ulong>(in[(i << 3) + 5]) << 40 |
+               static_cast<sycl::ulong>(in[(i << 3) + 4]) << 32 |
+               static_cast<sycl::ulong>(in[(i << 3) + 3]) << 24 |
+               static_cast<sycl::ulong>(in[(i << 3) + 2]) << 16 |
+               static_cast<sycl::ulong>(in[(i << 3) + 1]) << 8 |
+               static_cast<sycl::ulong>(in[(i << 3) + 0]) << 0;
+  }
+
+  // see how 0b01 is appended to input message bits in section
+  // 6.1 of http://dx.doi.org/10.6028/NIST.FIPS.202
+  //
+  // ! read right to left !
+  //
+  // also notice left most 1 added due to padding requirement
+  // as specified in section 5.1 of above linked specification
+  state[8] = 0b110ull;
+
+#pragma unroll 7
+  for (size_t i = 9; i < 16; i++) {
+    state[i] = 0ull;
+  }
+
+  // this 1 is added to input message bits due to padding requirement
+  // ( pad10*1 ) written in section 5.1 of
+  // http://dx.doi.org/10.6028/NIST.FIPS.202
+  //
+  // ! read right to left, so it's actually 1 << 63 !
+  state[16] = 9223372036854775808ull;
+
+#pragma unroll 8
+  for (size_t i = 17; i < 25; i++) {
+    state[i] = 0ull;
+  }
+}
+
 // Given two ( byte concatenated ) SHA3-256 digests ( i.e. 64 -bytes ), prepares
 // bit string of length 1600, which can be passed to keccak_p[b, n_r]
 // permutation function, in later phase
