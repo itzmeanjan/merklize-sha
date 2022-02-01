@@ -1,5 +1,6 @@
 #pragma once
 #include <CL/sycl.hpp>
+#include <bitset>
 
 // Circular right shift of 32 -bit word, by n bit places
 //
@@ -118,4 +119,64 @@ from_words_to_be_bytes(const sycl::ulong word, sycl::uchar* const out)
   *(out + 5) = static_cast<sycl::uchar>((word >> 16) & 0xff);
   *(out + 6) = static_cast<sycl::uchar>((word >> 8) & 0xff);
   *(out + 7) = static_cast<sycl::uchar>((word >> 0) & 0xff);
+}
+
+// Compile time check to ensure that template argument passed to bit lane
+// rotation function(s) is in allowed range ∈ [0, lane_size), lane_size = 64
+constexpr bool
+is_valid_rotation(const uint8_t n)
+{
+  return n >= 0 && n < 64;
+}
+
+// Circularly shift 64 -bit wide lane leftwards by `n` bit places
+// where n >= 0 && n < 64
+template<uint8_t pos>
+inline std::bitset<64>
+rotl(std::bitset<64>& a) requires(is_valid_rotation(pos))
+{
+  return (a << pos) | (a >> (64 - pos));
+}
+
+// Circularly shift 64 -bit wide lane rightwards by `n` bit places
+// where n >= 0 && n < 64
+template<uint8_t pos>
+inline std::bitset<64>
+rotr(std::bitset<64>& a) requires(is_valid_rotation(pos))
+{
+  return (a >> pos) | (a << (64 - pos));
+}
+
+// Modern C++ feature to compile-time ensure that template argument position,
+// passed to following `{get,set}_bit_at` routine ∈ [0, 8)
+constexpr bool
+is_valid_bit_pos(const uint8_t pos)
+{
+  return pos >= 0 && pos < 8;
+}
+
+// Extracts bit from one of 8 possible bit positions of a byte
+//
+// Bit position indexing is ascending right to left,
+// meaning if byte = 0b11110000,
+// then assert(byte[0] == 0 && byte[6] = 1)
+template<uint8_t pos>
+inline bool
+get_bit_at(sycl::uchar byte) requires(is_valid_bit_pos(pos))
+{
+  return (byte >> pos) & 0b1;
+}
+
+// Sets bit value at one of 8 possible bit positions in a byte
+//
+// Note indexing of bits in specified bytes is performed left to
+// right ascending order
+//
+// Meaning if byte = 0b11110000,
+// then assert(byte[0] == 1 && byte[7] = 0)
+template<uint8_t pos>
+inline sycl::uchar
+set_bit_at(bool bit) requires(is_valid_bit_pos(pos))
+{
+  return static_cast<sycl::uchar>(bit) << pos;
 }
