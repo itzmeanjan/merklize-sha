@@ -9,15 +9,19 @@
 // See specification of `θ` step mapping function in section 3.2.1
 // of http://dx.doi.org/10.6028/NIST.FIPS.202
 inline void
-θ(std::bitset<64> state[5][5])
+θ(sycl::ulong* const state)
 {
-  std::bitset<64> c[5];
-  std::bitset<64> d[5];
+  sycl::ulong c[5];
+  sycl::ulong d[5];
 
   // see step 1 of algorithm 1
 #pragma unroll 5
   for (size_t x = 0; x < 5; x++) {
-    c[x] = state[x][0] ^ state[x][1] ^ state[x][2] ^ state[x][3] ^ state[x][4];
+    const sycl::ulong tmp0 = state[x] ^ state[x + 5];
+    const sycl::ulong tmp1 = state[x + 10] ^ state[x + 15];
+    const sycl::ulong tmp3 = tmp0 ^ tmp1 ^ state[x + 20];
+
+    c[x] = tmp3;
   }
 
   // see step 2 of algorithm 1
@@ -28,16 +32,13 @@ inline void
     // try executing `assert(-1 % 5 == 4)` in Python3 shell
     const size_t x_ = x == 0 ? 4 : x - 1;
 
-    d[x] = c[x_] ^ rotl<1>(c[(x + 1) % 5]);
+    d[x] = c[x_] ^ rotl(c[(x + 1) % 5], 1);
   }
 
   // see step 3 of algorithm 1
 #pragma unroll 5
-  for (size_t x = 0; x < 5; x++) {
-#pragma unroll 5
-    for (size_t y = 0; y < 5; y++) {
-      state[x][y] ^= d[x];
-    }
+  for (size_t x = 0; x < 25; x++) {
+    state[x] ^= d[x % 5];
   }
 }
 
@@ -48,38 +49,38 @@ inline void
 // See specification of `ρ` step mapping function in section 3.2.2
 // of http://dx.doi.org/10.6028/NIST.FIPS.202
 inline void
-ρ(std::bitset<64> state_in[5][5])
+ρ(sycl::ulong* const state)
 {
   // see table 2 below algorithm 2, for rotation factors
   // ( = % lane size, which is 64 ) of each lanes
-  state_in[1][0] = rotl<1>(state_in[1][0]);
-  state_in[2][0] = rotl<62>(state_in[2][0]);
-  state_in[3][0] = rotl<28>(state_in[3][0]);
-  state_in[4][0] = rotl<27>(state_in[4][0]);
+  state[1] = rotl(state[1], 1);
+  state[2] = rotl(state[2], 62);
+  state[3] = rotl(state[3], 28);
+  state[4] = rotl(state[4], 27);
 
-  state_in[0][1] = rotl<36>(state_in[0][1]);
-  state_in[1][1] = rotl<44>(state_in[1][1]);
-  state_in[2][1] = rotl<6>(state_in[2][1]);
-  state_in[3][1] = rotl<55>(state_in[3][1]);
-  state_in[4][1] = rotl<20>(state_in[4][1]);
+  state[5] = rotl(state[5], 36);
+  state[6] = rotl(state[6], 44);
+  state[7] = rotl(state[7], 6);
+  state[8] = rotl(state[8], 55);
+  state[9] = rotl(state[9], 20);
 
-  state_in[0][2] = rotl<3>(state_in[0][2]);
-  state_in[1][2] = rotl<10>(state_in[1][2]);
-  state_in[2][2] = rotl<43>(state_in[2][2]);
-  state_in[3][2] = rotl<25>(state_in[3][2]);
-  state_in[4][2] = rotl<39>(state_in[4][2]);
+  state[10] = rotl(state[10], 3);
+  state[11] = rotl(state[11], 10);
+  state[12] = rotl(state[12], 43);
+  state[13] = rotl(state[13], 25);
+  state[14] = rotl(state[14], 39);
 
-  state_in[0][3] = rotl<41>(state_in[0][3]);
-  state_in[1][3] = rotl<45>(state_in[1][3]);
-  state_in[2][3] = rotl<15>(state_in[2][3]);
-  state_in[3][3] = rotl<21>(state_in[3][3]);
-  state_in[4][3] = rotl<8>(state_in[4][3]);
+  state[15] = rotl(state[15], 41);
+  state[16] = rotl(state[16], 45);
+  state[17] = rotl(state[17], 15);
+  state[18] = rotl(state[18], 21);
+  state[19] = rotl(state[19], 8);
 
-  state_in[0][4] = rotl<18>(state_in[0][4]);
-  state_in[1][4] = rotl<2>(state_in[1][4]);
-  state_in[2][4] = rotl<61>(state_in[2][4]);
-  state_in[3][4] = rotl<56>(state_in[3][4]);
-  state_in[4][4] = rotl<14>(state_in[4][4]);
+  state[20] = rotl(state[20], 18);
+  state[21] = rotl(state[21], 2);
+  state[22] = rotl(state[22], 61);
+  state[23] = rotl(state[23], 56);
+  state[24] = rotl(state[24], 14);
 }
 
 // keccak-p[b, n_r] step mapping
@@ -89,14 +90,15 @@ inline void
 // See specification of `π` step mapping function in section 3.2.3
 // of http://dx.doi.org/10.6028/NIST.FIPS.202
 inline void
-π(std::bitset<64> state_in[5][5], std::bitset<64> state_out[5][5])
+π(const sycl::ulong* __restrict state_in,
+  sycl::ulong* const __restrict state_out)
 {
   // step 1 of algorithm 3
 #pragma unroll 5
-  for (size_t x = 0; x < 5; x++) {
+  for (size_t y = 0; y < 5; y++) {
 #pragma unroll 5
-    for (size_t y = 0; y < 5; y++) {
-      state_out[x][y] = state_in[(x + 3 * y) % 5][x];
+    for (size_t x = 0; x < 5; x++) {
+      state_out[y * 5 + x] = state_in[5 * x + (x + 3 * y) % 5];
     }
   }
 }
@@ -108,7 +110,8 @@ inline void
 // See specification of `χ` step mapping function in section 3.2.4
 // of http://dx.doi.org/10.6028/NIST.FIPS.202
 inline void
-χ(std::bitset<64> state_in[5][5], std::bitset<64> state_out[5][5])
+χ(const sycl::ulong* __restrict state_in,
+  sycl::ulong* const __restrict state_out)
 {
   // step 1 of algorithm 4
 #pragma unroll 5
@@ -117,9 +120,9 @@ inline void
     for (size_t x = 0; x < 5; x++) {
       const size_t x_0 = (x + 1) % 5;
       const size_t x_1 = (x + 2) % 5;
-      const std::bitset<64> rhs = ~state_in[x_0][y] & state_in[x_1][y];
+      const sycl::ulong rhs = ~state_in[y * 5 + x_0] & state_in[y * 5 + x_1];
 
-      state_out[x][y] = state_in[x][y] ^ rhs;
+      state_out[y * 5 + x] = state_in[y * 5 + x] ^ rhs;
     }
   }
 }
@@ -172,7 +175,7 @@ rc(size_t t)
 // See specification of `ι` step mapping function in section 3.2.5
 // of http://dx.doi.org/10.6028/NIST.FIPS.202
 inline void
-ι(std::bitset<64> state[5][5], size_t round_index)
+ι(sycl::ulong* const state, size_t round_index)
 {
   // step 2 of algorithm 6
   std::bitset<64> RC;
@@ -184,7 +187,7 @@ inline void
   }
 
   // step 4 of algorithm 6
-  state[0][0] ^= RC;
+  state[0] ^= RC.to_ulong();
 }
 
 // keccak-p[b, n_r] round function, which applies all five
@@ -192,9 +195,9 @@ inline void
 //
 // See section 3.3 of http://dx.doi.org/10.6028/NIST.FIPS.202
 void
-rnd(std::bitset<64> state[5][5], size_t round_index)
+rnd(sycl::ulong* const state, size_t round_index)
 {
-  std::bitset<64> tmp[5][5];
+  sycl::ulong tmp[25];
 
   θ(state);
   ρ(state);
@@ -203,53 +206,14 @@ rnd(std::bitset<64> state[5][5], size_t round_index)
   ι(state, round_index);
 }
 
-// Routine for converting bit string to 5 x 5 x 64 state array
-// using technique defined in section 3.1.2 of
-// http://dx.doi.org/10.6028/NIST.FIPS.202
-void
-to_state_array(std::bitset<1600>& s, std::bitset<64> state[5][5])
-{
-  for (size_t y = 0; y < 5; y++) {
-    for (size_t x = 0; x < 5; x++) {
-      for (size_t z = 0; z < 64; z++) {
-        state[x][y][z] = s[1599 - (64 * (5 * y + x) + z)];
-      }
-    }
-  }
-}
-
-// Routine for converting 5 x 5 x 64 state array to bit string
-// using method defined in section 3.1.3 of
-// http://dx.doi.org/10.6028/NIST.FIPS.202
-void
-to_bit_string(std::bitset<64> state[5][5], std::bitset<1600>& s)
-{
-  size_t s_idx = 1599;
-
-  for (size_t y = 0; y < 5; y++) {
-    for (size_t x = 0; x < 5; x++) {
-      for (size_t z = 0; z < 64; z++) {
-        s[s_idx--] = state[x][y][z];
-      }
-    }
-  }
-}
-
 // keccak-p[b, n_r] permutation, applying n_r ( = 24 ) rounds
-// on state bit array ( = s ), using algorithm 7 defined in
-// section 3.3 of http://dx.doi.org/10.6028/NIST.FIPS.202
-void
-keccak_p(std::bitset<1600>& s)
+// on state bit array of dimension 5 x 5 x 64, using algorithm 7
+// defined in section 3.3 of http://dx.doi.org/10.6028/NIST.FIPS.202
+inline void
+keccak_p(sycl::ulong* const state)
 {
-  // step 1 of algorithm 7
-  std::bitset<64> state[5][5];
-  to_state_array(s, state);
-
   // step 2 of algorithm 7
   for (size_t i = 0; i < 24; i++) {
     rnd(state, i);
   }
-
-  // step 3 of algorithm 7
-  to_bit_string(state, s);
 }
