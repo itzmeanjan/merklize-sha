@@ -13,3 +13,4 @@ SHA=sha2_512_224 make; make clean
 SHA=sha2_512_256 make; make clean
 SHA=sha3_256 make; make clean
 SHA=sha3_224 make; make clean
+SHA=sha3_384 make; make clean
