@@ -42,6 +42,18 @@ benchmark_merklize(sycl::queue& q,
 #elif defined SHA2_512_256
   const size_t i_size = leaf_cnt * sha2_512_256::OUT_LEN_BYTES; // in bytes
   const size_t o_size = leaf_cnt * sha2_512_256::OUT_LEN_BYTES; // in bytes
+#elif defined SHA3_256
+  const size_t i_size = leaf_cnt * sha3_256::OUT_LEN_BYTES; // in bytes
+  const size_t o_size = leaf_cnt * sha3_256::OUT_LEN_BYTES; // in bytes
+#elif defined SHA3_224
+  const size_t i_size = leaf_cnt * sha3_224::OUT_LEN_BYTES; // in bytes
+  const size_t o_size = leaf_cnt * sha3_224::OUT_LEN_BYTES; // in bytes
+#elif defined SHA3_384
+  const size_t i_size = leaf_cnt * sha3_384::OUT_LEN_BYTES; // in bytes
+  const size_t o_size = leaf_cnt * sha3_384::OUT_LEN_BYTES; // in bytes
+#elif defined SHA3_512
+  const size_t i_size = leaf_cnt * sha3_512::OUT_LEN_BYTES; // in bytes
+  const size_t o_size = leaf_cnt * sha3_512::OUT_LEN_BYTES; // in bytes
 #endif
 
 #if defined SHA1 || defined SHA2_224 || defined SHA2_256
@@ -57,6 +69,13 @@ benchmark_merklize(sycl::queue& q,
   sycl::ulong* o_h = static_cast<sycl::ulong*>(sycl::malloc_host(o_size, q));
   sycl::ulong* i_d = static_cast<sycl::ulong*>(sycl::malloc_device(i_size, q));
   sycl::ulong* o_d = static_cast<sycl::ulong*>(sycl::malloc_device(o_size, q));
+#elif defined SHA3_256 || defined SHA3_224 || defined SHA3_384 ||              \
+  defined SHA3_512
+  // allocate resources
+  sycl::uchar* i_h = static_cast<sycl::uchar*>(sycl::malloc_host(i_size, q));
+  sycl::uchar* o_h = static_cast<sycl::uchar*>(sycl::malloc_host(o_size, q));
+  sycl::uchar* i_d = static_cast<sycl::uchar*>(sycl::malloc_device(i_size, q));
+  sycl::uchar* o_d = static_cast<sycl::uchar*>(sycl::malloc_device(o_size, q));
 #endif
 
   // Set all intermediate nodes to zero bytes,
@@ -108,6 +127,14 @@ benchmark_merklize(sycl::queue& q,
                      (32 >> 3)
 #elif defined SHA2_512_256
                      (sha2_512_256::OUT_LEN_BYTES >> 3)
+#elif defined SHA3_256
+                     (sha3_256::OUT_LEN_BYTES)
+#elif defined SHA3_224
+                     (sha3_224::OUT_LEN_BYTES)
+#elif defined SHA3_384
+                     (sha3_384::OUT_LEN_BYTES)
+#elif defined SHA3_512
+                     (sha3_512::OUT_LEN_BYTES)
 #endif
 
          ;
