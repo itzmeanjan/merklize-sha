@@ -64,6 +64,9 @@ main(int argc, char** argv)
 #elif defined SHA3_256
   std::cout << "\nBenchmarking Binary Merklization using SHA3-256" << std::endl
             << std::endl;
+#elif defined SHA3_224
+  std::cout << "\nBenchmarking Binary Merklization using SHA3-224" << std::endl
+            << std::endl;
 #endif
 
   std::cout << std::setw(16) << std::right << "leaf count"

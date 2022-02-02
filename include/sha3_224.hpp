@@ -20,7 +20,7 @@ constexpr size_t OUT_LEN_BYTES = IN_LEN_BYTES >> 1;
 void
 to_state_array(const sycl::uchar* __restrict in,
                sycl::ulong* const __restrict state)
-{ 
+{
 #pragma unroll 7
   for (size_t i = 0; i < (IN_LEN_BYTES >> 3); i++) {
     state[i] = static_cast<sycl::ulong>(in[(i << 3) + 7]) << 56 |

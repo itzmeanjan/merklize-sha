@@ -45,6 +45,9 @@ benchmark_merklize(sycl::queue& q,
 #elif defined SHA3_256
   const size_t i_size = leaf_cnt * sha3_256::OUT_LEN_BYTES; // in bytes
   const size_t o_size = leaf_cnt * sha3_256::OUT_LEN_BYTES; // in bytes
+#elif defined SHA3_224
+  const size_t i_size = leaf_cnt * sha3_224::OUT_LEN_BYTES; // in bytes
+  const size_t o_size = leaf_cnt * sha3_224::OUT_LEN_BYTES; // in bytes
 #endif
 
 #if defined SHA1 || defined SHA2_224 || defined SHA2_256
@@ -60,7 +63,7 @@ benchmark_merklize(sycl::queue& q,
   sycl::ulong* o_h = static_cast<sycl::ulong*>(sycl::malloc_host(o_size, q));
   sycl::ulong* i_d = static_cast<sycl::ulong*>(sycl::malloc_device(i_size, q));
   sycl::ulong* o_d = static_cast<sycl::ulong*>(sycl::malloc_device(o_size, q));
-#elif defined SHA3_256
+#elif defined SHA3_256 || defined SHA3_224
   // allocate resources
   sycl::uchar* i_h = static_cast<sycl::uchar*>(sycl::malloc_host(i_size, q));
   sycl::uchar* o_h = static_cast<sycl::uchar*>(sycl::malloc_host(o_size, q));
@@ -119,6 +122,8 @@ benchmark_merklize(sycl::queue& q,
                      (sha2_512_256::OUT_LEN_BYTES >> 3)
 #elif defined SHA3_256
                      (sha3_256::OUT_LEN_BYTES)
+#elif defined SHA3_224
+                     (sha3_224::OUT_LEN_BYTES)
 #endif
 
          ;
