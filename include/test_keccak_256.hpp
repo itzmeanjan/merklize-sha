@@ -30,7 +30,8 @@ test_keccak_256(sycl::queue& q)
   }
 
   // enqueue kernel execution in single work-item model
-  q.single_task<class kernelTestSHA3_256>([=]() { keccak_256::hash(in, out); });
+  q.single_task<class kernelTestKeccak_256>(
+    [=]() { keccak_256::hash(in, out); });
   q.wait();
 
   // check result !
