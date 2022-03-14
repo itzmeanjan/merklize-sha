@@ -4,7 +4,7 @@ SYCL accelerated Binary Merklization using SHA1, SHA2 & SHA3
 
 ## Motivation
 
-After implementing BLAKE3 using SYCL, I decided to accelerate 2-to-1 hash implementation of all variants of SHA1, SHA2 & SHA3 families of cryptographic hash functions. BLAKE3 lends itself pretty well to parallelization efforts, due to its inherent data parallel friendly algorithmic construction, where each 1024 -bytes chunk can be compressed independently ( read parallelly ) and finally it's a binary merklization problem with compressed chunks as leaf nodes of binary merkle tree. But none of SHA1, SHA2 & SHA3 families of cryptographic hash functions are data parallel, requiring to process each message block ( can be 512 -bit/ 1024 -bit or padded to 1600 -bit in case of SHA3 family ) sequentially, which is why I only concentrated on accelerating Binary Merklization where SHA1/ SHA2/ SHA3 families of cryptographic ( 2-to-1 ) hash functions are used for computing all intermediate nodes of tree when N -many leaf nodes are provided, where `N = 2 ^ i | i = {1, 2, 3 ...}`. Each of these N -many leaf nodes are respective hash digests --- for example, when using SHA2-256 variant for computing all intermediate nodes of binary merkle tree, each of provided leaf node is 32 -bytes wide, representing a SHA2-256 digest. Now, N -many leaf digests are merged into N/ 2 -many digests which are intermediate nodes, living just above leaf nodes. Then in next phase, those N/ 2 -many intermediates are used for computing N/ 4 -many of intermediates which are living just above them. This process continues until root of merkle tree is computed. Notice, that in each level of tree, each consecutive pair of digests can be hashed independently --- and that's the scope of parallelism I'd like to make use of during binary merklization. In following depiction, when N ( = 4 ) nodes are provided as input, two intermediates can be computed in parallel and once they're computed root of tree can be computed as a single task.
+After implementing BLAKE3 using SYCL, I decided to accelerate 2-to-1 hash implementation of all variants of SHA1, SHA2 & SHA3 families of cryptographic hash functions ( along with `keccak256` ). BLAKE3 lends itself pretty well to parallelization efforts, due to its inherent data parallel friendly algorithmic construction, where each 1024 -bytes chunk can be compressed independently ( read parallelly ) and finally it's a binary merklization problem with compressed chunks as leaf nodes of binary merkle tree. But none of SHA1, SHA2 & SHA3 ( or keccak256 ) families of cryptographic hash functions are data parallel, requiring to process each message block ( can be 512 -bit/ 1024 -bit or padded to 1600 -bit in case of SHA3 family ) sequentially, which is why I only concentrated on accelerating Binary Merklization where SHA1/ SHA2/ SHA3 families of cryptographic ( 2-to-1 ) hash functions are used for computing all intermediate nodes of tree when N -many leaf nodes are provided, where `N = 2 ^ i | i = {1, 2, 3 ...}`. Each of these N -many leaf nodes are respective hash digests --- for example, when using SHA2-256 variant for computing all intermediate nodes of binary merkle tree, each of provided leaf node is 32 -bytes wide, representing a SHA2-256 digest. Now, N -many leaf digests are merged into N/ 2 -many digests which are intermediate nodes, living just above leaf nodes. Then in next phase, those N/ 2 -many intermediates are used for computing N/ 4 -many of intermediates which are living just above them. This process continues until root of merkle tree is computed. Notice, that in each level of tree, each consecutive pair of digests can be hashed independently --- and that's the scope of parallelism I'd like to make use of during binary merklization. In following depiction, when N ( = 4 ) nodes are provided as input, two intermediates can be computed in parallel and once they're computed root of tree can be computed as a single task.
 
 ```bash
   ((a, b), (c, d))          < --- [Level 1] [Root]
@@ -25,7 +25,7 @@ input   = [a, b, c, d]
 output  = [0, ((a, b), (c, d)), (a, b), (c, d)]
 ```
 
-Here in this repository, I'm keeping binary merklization kernels, implemented in SYCL, while using SHA1/ SHA2/ SHA3 variants as 2-to-1 hash function, which one to use is compile-time choice using pre-processor directive.
+Here in this repository, I'm keeping binary merklization kernels, implemented in SYCL, while using SHA1/ SHA2/ SHA3 variants as 2-to-1 hash function ( along with keccak256 ), which one to use is compile-time choice using pre-processor directive.
 
 If you happen to be interested in Binary Merklization using Rescue Prime Hash/ BLAKE3, consider seeing following links.
 
@@ -35,6 +35,8 @@ If you happen to be interested in Binary Merklization using Rescue Prime Hash/ B
 > During SHA1, SHA2 implementations, I've followed Secure Hash Standard [specification](http://dx.doi.org/10.6028/NIST.FIPS.180-4).
 
 > During SHA3 implementations, I've followed SHA-3 Standard [specification](http://dx.doi.org/10.6028/NIST.FIPS.202).
+
+> During Keccak256 implementation, I took some inspiration from [here](https://keccak.team/files/Keccak-implementation-3.2.pdf); though note that, keccak256 & sha3-256 are very much similar, except input message padding rule; see https://github.com/itzmeanjan/merklize-sha/pull/10 PR description.
 
 > Using SHA1 for binary merklization may not be a good choice these days, see [here](https://csrc.nist.gov/Projects/Hash-Functions/NIST-Policy-on-Hash-Functions). But still I'm keeping SHA1 implementation, just as a reference.
 
@@ -153,5 +155,9 @@ I'm keeping binary merklization benchmark results of
   - [Nvidia GPU(s)](results/sha3-512/nvidia_gpu.md)
   - [Intel CPU(s)](results/sha3-512/intel_cpu.md)
   - [Intel GPU(s)](results/sha3-512/intel_gpu.md)
+- KECCAK-256
+  - [Nvidia GPU(s)](results/keccak-256/nvidia_gpu.md)
+  - [Intel CPU(s)](results/keccak-256/intel_cpu.md)
+  - [Intel GPU(s)](results/keccak-256/intel_gpu.md)
 
 obtained after executing them on multiple accelerators.
