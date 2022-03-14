@@ -1,3 +1,4 @@
+#include "test_bit_interleaving.hpp"
 #include "test_merklize.hpp"
 #include <iostream>
 
@@ -39,6 +40,9 @@ main(int argc, char** argv)
   std::cout << "running on " << d.get_info<sycl::info::device::name>()
             << std::endl
             << std::endl;
+
+  test_bit_interleaving<1ul << 20>();
+  std::cout << "passed bit interleaving test !" << std::endl;
 
 #if defined SHA1
 
