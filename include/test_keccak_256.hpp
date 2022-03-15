@@ -21,7 +21,8 @@ test_keccak_256(sycl::queue& q)
 
   // acquire resources
   sycl::uchar* in = static_cast<sycl::uchar*>(sycl::malloc_shared(64, q));
-  sycl::uchar* out = static_cast<sycl::uchar*>(sycl::malloc_shared(32, q));
+  sycl::uchar* out_0 = static_cast<sycl::uchar*>(sycl::malloc_shared(32, q));
+  sycl::uchar* out_1 = static_cast<sycl::uchar*>(sycl::malloc_shared(32, q));
 
 #pragma unroll 16
   for (size_t i = 0; i < 64; i++) {
@@ -30,16 +31,20 @@ test_keccak_256(sycl::queue& q)
   }
 
   // enqueue kernel execution in single work-item model
-  q.single_task<class kernelTestKeccak_256>(
-    [=]() { keccak_256::hash(in, out); });
+  q.single_task<class kernelTestKeccak_256>([=]() {
+    keccak_256::hash(in, out_0);
+    keccak_256::hash_u32(in, out_1);
+  });
   q.wait();
 
   // check result !
   for (size_t i = 0; i < 32; i++) {
-    assert(out[i] == expected[i]);
+    assert(out_0[i] == expected[i]);
+    assert(out_1[i] == expected[i]);
   }
 
   // ensure resources are deallocated
   sycl::free(in, q);
-  sycl::free(out, q);
+  sycl::free(out_0, q);
+  sycl::free(out_1, q);
 }
