@@ -3,7 +3,9 @@
 Compile with
 
 ```bash
-SHA=keccak_256 make cuda
+SHA=keccak_256_u64 make cuda
+
+# if interested, also do `SHA=keccak_256_u32 make cuda`
 ```
 
 ### On `Tesla V100-SXM2-16GB`

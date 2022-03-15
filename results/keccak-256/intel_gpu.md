@@ -3,7 +3,9 @@
 Compiling with
 
 ```bash
-SHA=keccak_256 make aot_gpu
+SHA=keccak_256_u64 make aot_gpu
+
+# if interested, also do `SHA=keccak_256_u32 make aot_gpu`
 ```
 
 ### On `Intel(R) UHD Graphics P630 [0x3e96]`
