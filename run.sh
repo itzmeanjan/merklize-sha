@@ -20,4 +20,5 @@ SHA=sha3_256     make; make clean
 SHA=sha3_224     make; make clean
 SHA=sha3_384     make; make clean
 SHA=sha3_512     make; make clean
-SHA=keccak_256     make; make clean
+SHA=keccak_256_u64     make; make clean
+SHA=keccak_256_u32     make; make clean
