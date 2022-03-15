@@ -44,7 +44,7 @@ test_merklize(sycl::queue& q)
 #elif defined SHA3_512
   constexpr size_t i_size = leaf_cnt * sha3_512::OUT_LEN_BYTES; // in bytes
   constexpr size_t o_size = leaf_cnt * sha3_512::OUT_LEN_BYTES; // in bytes
-#elif defined KECCAK_256
+#elif defined KECCAK_256_U64 || defined KECCAK_256_U32
   constexpr size_t i_size = leaf_cnt * keccak_256::OUT_LEN_BYTES; // in bytes
   constexpr size_t o_size = leaf_cnt * keccak_256::OUT_LEN_BYTES; // in bytes
 #endif
@@ -321,7 +321,7 @@ test_merklize(sycl::queue& q)
     177, 100, 141, 206, 4,   39,  65,  1,   168, 4,  149, 112, 77,
     212, 175, 50,  150, 42,  29,  174, 20,  201, 12, 120, 26
   };
-#elif defined KECCAK_256
+#elif defined KECCAK_256_U64 || defined KECCAK_256_U32
   // $ python3 -m pip install --user pysha3
   // $ python3
   //
@@ -361,14 +361,14 @@ test_merklize(sycl::queue& q)
   sycl::ulong* out_0 = (sycl::ulong*)sycl::malloc_shared(o_size, q);
   sycl::uchar* out_1 = (sycl::uchar*)sycl::malloc_shared(o_size, q);
 #elif defined SHA3_256 || defined SHA3_224 || defined SHA3_384 ||              \
-  defined SHA3_512 || defined KECCAK_256
+  defined SHA3_512 || defined KECCAK_256_U64 || defined KECCAK_256_U32
   // acquire resources
   sycl::uchar* in = (sycl::uchar*)sycl::malloc_shared(i_size, q);
   sycl::uchar* out = (sycl::uchar*)sycl::malloc_shared(o_size, q);
 #endif
 
 #if defined SHA3_256 || defined SHA3_224 || defined SHA3_384 ||                \
-  defined SHA3_512 || defined KECCAK_256
+  defined SHA3_512 || defined KECCAK_256_U64 || defined KECCAK_256_U32
 
   // prepare input bytes
   q.memset(in, 0xff, i_size).wait();
@@ -419,7 +419,7 @@ test_merklize(sycl::queue& q)
 #endif
 
 #if defined SHA3_256 || defined SHA3_224 || defined SHA3_384 ||                \
-  defined SHA3_512 || defined KECCAK_256
+  defined SHA3_512 || defined KECCAK_256_U64 || defined KECCAK_256_U32
 
   // wait until completely merklized !
   merklize(q, in, i_size, leaf_cnt, out, o_size, leaf_cnt - 1, leaf_cnt >> 1);
@@ -478,7 +478,7 @@ test_merklize(sycl::queue& q)
                      sha3_384::OUT_LEN_BYTES
 #elif defined SHA3_512
                      sha3_512::OUT_LEN_BYTES
-#elif defined KECCAK_256
+#elif defined KECCAK_256_U64 || defined KECCAK_256_U32
                      keccak_256::OUT_LEN_BYTES
 #endif
 
@@ -486,7 +486,7 @@ test_merklize(sycl::queue& q)
 
        i++) {
 #if defined SHA3_256 || defined SHA3_224 || defined SHA3_384 ||                \
-  defined SHA3_512 || defined KECCAK_256
+  defined SHA3_512 || defined KECCAK_256_U64 || defined KECCAK_256_U32
 
     assert(*(out + i) == 0);
 
@@ -545,7 +545,7 @@ test_merklize(sycl::queue& q)
   for (size_t i = sha3_512::OUT_LEN_BYTES, j = 0;
        i < (sha3_512::OUT_LEN_BYTES << 1) && j < sha3_512::OUT_LEN_BYTES;
        i++, j++)
-#elif defined KECCAK_256
+#elif defined KECCAK_256_U64 || defined KECCAK_256_U32
   for (size_t i = keccak_256::OUT_LEN_BYTES, j = 0;
        i < (keccak_256::OUT_LEN_BYTES << 1) && j < keccak_256::OUT_LEN_BYTES;
        i++, j++)
@@ -553,7 +553,7 @@ test_merklize(sycl::queue& q)
 
   {
 #if defined SHA3_256 || defined SHA3_224 || defined SHA3_384 ||                \
-  defined SHA3_512 || defined KECCAK_256
+  defined SHA3_512 || defined KECCAK_256_U64 || defined KECCAK_256_U32
 
     assert(*(out + i) == expected[j]);
 
@@ -566,7 +566,7 @@ test_merklize(sycl::queue& q)
 
   // ensure resources are deallocated
 #if defined SHA3_256 || defined SHA3_224 || defined SHA3_384 ||                \
-  defined SHA3_512 || defined KECCAK_256
+  defined SHA3_512 || defined KECCAK_256_U64 || defined KECCAK_256_U32
 
   sycl::free(in, q);
   sycl::free(out, q);
