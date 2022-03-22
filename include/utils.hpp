@@ -119,3 +119,57 @@ from_words_to_be_bytes(const sycl::ulong word, sycl::uchar* const out)
   *(out + 6) = static_cast<sycl::uchar>((word >> 8) & 0xff);
   *(out + 7) = static_cast<sycl::uchar>((word >> 0) & 0xff);
 }
+
+// Given a 64 -bit unsigned integer ( call it u64_word ), splits it into two 32
+// -bit unsigned integers ( call them u32_{even, odd}_word ) where u32_odd_word
+// holds only those bits living on odd bit indices of u64_word and u32_even_word
+// holds only those bits living on even bit indices of u64_word
+//
+// See section 2.1 of https://keccak.team/files/Keccak-implementation-3.2.pdf
+void
+to_bit_interleaved(const uint64_t word,
+                   uint32_t* interleaved_even,
+                   uint32_t* interleaved_odd)
+{
+  *interleaved_even = 0;
+  *interleaved_odd = 0;
+
+  for (size_t i = 0, j = 0; i < 64; i++) {
+    // select i-th bit position
+    const uint32_t bit = static_cast<uint32_t>((word >> i) & 0b1ul);
+
+    if ((i & 0b1) == 0) { // even bit position
+      *interleaved_even |= (bit << j);
+    } else { // odd bit position
+      *interleaved_odd |= (bit << j);
+
+      j++;
+    }
+  }
+}
+
+// Given two 32 -bit unsigned integers ( representing a 64 -bit number in bit
+// interleaved form ), converts them into single 64 -bit unsigned integer in
+// standard form
+//
+// Just opposite of what above defined `to_bit_interleaved` function does !
+//
+// See section 2.1 of https://keccak.team/files/Keccak-implementation-3.2.pdf
+const uint64_t
+from_bit_interleaved(const uint32_t interleaved_even,
+                     const uint32_t interleaved_odd)
+{
+  uint64_t word = 0;
+
+  for (size_t i = 0, j = 0; i < 64; i++) {
+    if ((i & 0b1) == 0) { // even bit position
+      word |= (static_cast<uint64_t>((interleaved_even >> j) & 0b1u) << i);
+    } else { // odd bit position
+      word |= (static_cast<uint64_t>((interleaved_odd >> j) & 0b1u) << i);
+
+      j++;
+    }
+  }
+
+  return word;
+}

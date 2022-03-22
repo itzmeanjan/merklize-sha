@@ -54,7 +54,7 @@ benchmark_merklize(sycl::queue& q,
 #elif defined SHA3_512
   const size_t i_size = leaf_cnt * sha3_512::OUT_LEN_BYTES; // in bytes
   const size_t o_size = leaf_cnt * sha3_512::OUT_LEN_BYTES; // in bytes
-#elif defined KECCAK_256
+#elif defined KECCAK_256_U64 || defined KECCAK_256_U32
   const size_t i_size = leaf_cnt * keccak_256::OUT_LEN_BYTES; // in bytes
   const size_t o_size = leaf_cnt * keccak_256::OUT_LEN_BYTES; // in bytes
 #endif
@@ -73,7 +73,7 @@ benchmark_merklize(sycl::queue& q,
   sycl::ulong* i_d = static_cast<sycl::ulong*>(sycl::malloc_device(i_size, q));
   sycl::ulong* o_d = static_cast<sycl::ulong*>(sycl::malloc_device(o_size, q));
 #elif defined SHA3_256 || defined SHA3_224 || defined SHA3_384 ||              \
-  defined SHA3_512 || defined KECCAK_256
+  defined SHA3_512 || defined KECCAK_256_U64 || defined KECCAK_256_U32
   // allocate resources
   sycl::uchar* i_h = static_cast<sycl::uchar*>(sycl::malloc_host(i_size, q));
   sycl::uchar* o_h = static_cast<sycl::uchar*>(sycl::malloc_host(o_size, q));
@@ -138,7 +138,7 @@ benchmark_merklize(sycl::queue& q,
                      (sha3_384::OUT_LEN_BYTES)
 #elif defined SHA3_512
                      (sha3_512::OUT_LEN_BYTES)
-#elif defined KECCAK_256
+#elif defined KECCAK_256_U64 || defined KECCAK_256_U32
                      (keccak_256::OUT_LEN_BYTES)
 #endif
 

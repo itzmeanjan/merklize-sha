@@ -51,8 +51,13 @@ main(int argc, char** argv)
   q.memcpy(in + sizeof(digest_0), digest_1, sizeof(digest_1)).wait();
 
   // compute 2-to-1 hash
-  q.single_task<class kernelExampleKECCAK_256>(
-    [=]() { keccak_256::hash(in, out); });
+  q.single_task<class kernelExampleKECCAK_256>([=]() {
+    // if you want, you can replace `keccak_256::hash` with
+    // `keccak_256::hash_u32`, which represents each lane of state array using
+    // two 32 -bit unsigned integers ( bit interleaved form ) and uses only 32
+    // -bit bitwise operations when computing keccak256 2-to-1 hash
+    keccak_256::hash(in, out);
+  });
   q.wait();
 
   // finally assert !

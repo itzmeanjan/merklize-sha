@@ -3,7 +3,8 @@
 #if !(defined SHA1 || defined SHA2_224 || defined SHA2_256 ||                  \
       defined SHA2_384 || defined SHA2_512 || defined SHA2_512_224 ||          \
       defined SHA2_512_256 || defined SHA3_256 || defined SHA3_224 ||          \
-      defined SHA3_384 || defined SHA3_512 || defined KECCAK_256)
+      defined SHA3_384 || defined SHA3_512 || defined KECCAK_256_U64 ||        \
+      defined KECCAK_256_U32)
 #define SHA2_256
 #endif
 
@@ -40,9 +41,14 @@
 #elif defined SHA3_512
 #include "sha3_512.hpp"
 #pragma message "Choosing to compile Merklization with SHA3-512 !"
-#elif defined KECCAK_256
+#elif defined KECCAK_256_U64
 #include "keccak_256.hpp"
-#pragma message "Choosing to compile Merklization with KECCAK-256 !"
+#pragma message                                                                \
+  "Choosing to compile Merklization with KECCAK-256 ( 64 -bit word ) !"
+#elif defined KECCAK_256_U32
+#include "keccak_256.hpp"
+#pragma message                                                                \
+  "Choosing to compile Merklization with KECCAK-256 ( 32 -bit word ) !"
 #endif
 
 // Binary merklization --- collects motivation from
@@ -59,7 +65,7 @@ merklize(sycl::queue& q,
   defined SHA2_512_256
          const sycl::ulong* __restrict leaf_nodes,
 #elif defined SHA3_256 || defined SHA3_224 || defined SHA3_384 ||              \
-  defined SHA3_512 || defined KECCAK_256
+  defined SHA3_512 || defined KECCAK_256_U64 || defined KECCAK_256_U32
          const sycl::uchar* __restrict leaf_nodes,
 #endif
 
@@ -72,7 +78,7 @@ merklize(sycl::queue& q,
   defined SHA2_512_256
          sycl::ulong* const __restrict intermediates,
 #elif defined SHA3_256 || defined SHA3_224 || defined SHA3_384 ||              \
-  defined SHA3_512 || defined KECCAK_256
+  defined SHA3_512 || defined KECCAK_256_U64 || defined KECCAK_256_U32
          sycl::uchar* const __restrict intermediates,
 #endif
 
@@ -119,7 +125,7 @@ merklize(sycl::queue& q,
 #elif defined SHA3_512
   assert(i_size == leaf_cnt * sha3_512::OUT_LEN_BYTES);
   assert(o_size == (itmd_cnt + 1) * sha3_512::OUT_LEN_BYTES);
-#elif defined KECCAK_256
+#elif defined KECCAK_256_U64 || defined KECCAK_256_U32
   assert(i_size == leaf_cnt * keccak_256::OUT_LEN_BYTES);
   assert(o_size == (itmd_cnt + 1) * keccak_256::OUT_LEN_BYTES);
 #endif
@@ -167,7 +173,7 @@ merklize(sycl::queue& q,
   // note that `o_size` is in terms of bytes
   const size_t elm_cnt = o_size >> 3;
 #elif defined SHA3_256 || defined SHA3_224 || defined SHA3_384 ||              \
-  defined SHA3_512 || defined KECCAK_256
+  defined SHA3_512 || defined KECCAK_256_U64 || defined KECCAK_256_U32
   // # -of 8 -bit unsigned integers ( read a byte ), which can be contiguously
   // placed on output memory allocation
   //
@@ -234,7 +240,7 @@ merklize(sycl::queue& q,
 #elif defined SHA3_512
         const size_t in_idx = idx * sha3_512::IN_LEN_BYTES;
         const size_t out_idx = idx * sha3_512::OUT_LEN_BYTES;
-#elif defined KECCAK_256
+#elif defined KECCAK_256_U64 || defined KECCAK_256_U32
         const size_t in_idx = idx * keccak_256::IN_LEN_BYTES;
         const size_t out_idx = idx * keccak_256::OUT_LEN_BYTES;
 #endif
@@ -280,11 +286,16 @@ merklize(sycl::queue& q,
         sycl::uchar* out = intermediates + o_offset + out_idx;
 
         sha3_512::hash(in, out);
-#elif defined KECCAK_256
+#elif defined KECCAK_256_U64
         const sycl::uchar* in = leaf_nodes + i_offset + in_idx;
         sycl::uchar* out = intermediates + o_offset + out_idx;
 
         keccak_256::hash(in, out);
+#elif defined KECCAK_256_U32
+        const sycl::uchar* in = leaf_nodes + i_offset + in_idx;
+        sycl::uchar* out = intermediates + o_offset + out_idx;
+
+        keccak_256::hash_u32(in, out);
 #endif
       });
   });
@@ -413,7 +424,7 @@ merklize(sycl::queue& q,
 #elif defined SHA3_512
           const size_t in_idx = idx * sha3_512::IN_LEN_BYTES;
           const size_t out_idx = idx * sha3_512::OUT_LEN_BYTES;
-#elif defined KECCAK_256
+#elif defined KECCAK_256_U64 || defined KECCAK_256_U32
           const size_t in_idx = idx * keccak_256::IN_LEN_BYTES;
           const size_t out_idx = idx * keccak_256::OUT_LEN_BYTES;
 #endif
@@ -464,11 +475,16 @@ merklize(sycl::queue& q,
           sycl::uchar* out = intermediates + o_offset_ + out_idx;
 
           sha3_512::hash(in, out);
-#elif defined KECCAK_256
+#elif defined KECCAK_256_U64
           const sycl::uchar* in = intermediates + i_offset_ + in_idx;
           sycl::uchar* out = intermediates + o_offset_ + out_idx;
 
           keccak_256::hash(in, out);
+#elif defined KECCAK_256_U32
+          const sycl::uchar* in = intermediates + i_offset_ + in_idx;
+          sycl::uchar* out = intermediates + o_offset_ + out_idx;
+
+          keccak_256::hash_u32(in, out);
 #endif
         });
     });

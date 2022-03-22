@@ -3,7 +3,9 @@
 Compiling with
 
 ```bash
-SHA=keccak_256 make aot_cpu
+SHA=keccak_256_u64 make aot_cpu
+
+# if interested, also do `SHA=keccak_256_u32 make aot_cpu`
 ```
 
 ### On `Intel(R) Xeon(R) CPU E5-2686 v4 @ 2.30GHz`
