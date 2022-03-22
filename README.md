@@ -38,6 +38,8 @@ If you happen to be interested in Binary Merklization using Rescue Prime Hash/ B
 
 > During Keccak256 implementation, I took some inspiration from [here](https://keccak.team/files/Keccak-implementation-3.2.pdf); though note that, keccak256 & sha3-256 are very much similar, except input message padding rule; see https://github.com/itzmeanjan/merklize-sha/pull/10 PR description.
 
+> I'm also keeping an alternative implementation of keccak256 2-to-1 hash, where each 64 -bit lane of keccak-p[1600, 24] state array is represented in terms of two 32 -bit unsigned integers ( in bit interleaved form ) and applying rounds involve only using 32 -bit bitwise operations. This implementation takes motivation from section 2.1 of [this](https://keccak.team/files/Keccak-implementation-3.2.pdf) document. *If interested see keccak256 2-to-1 hash implementation using 32 -bit word size, [here](https://github.com/itzmeanjan/merklize-sha/blob/12f61fa52b5eb2d674a4dafd124585a9a76dae52/include/keccak_256.hpp#L232-L257)*. **This same implementation guided me while writing keccak256 2-to-1 hash function in Polygon Miden Assembly**, see [PR](https://github.com/maticnetwork/miden/pull/154).
+
 > Using SHA1 for binary merklization may not be a good choice these days, see [here](https://csrc.nist.gov/Projects/Hash-Functions/NIST-Policy-on-Hash-Functions). But still I'm keeping SHA1 implementation, just as a reference.
 
 ## Prerequisites
@@ -90,7 +92,7 @@ If you happen to be interested in 2-to-1 hash implementation of
 - [SHA3-256](https://github.com/itzmeanjan/merklize-sha/blob/8f9b168/example/sha3_256.cpp)
 - [SHA3-384](https://github.com/itzmeanjan/merklize-sha/blob/8f9b168/example/sha3_384.cpp)
 - [SHA3-512](https://github.com/itzmeanjan/merklize-sha/blob/8f9b168/example/sha3_512.cpp)
-- [KECCAK-256](https://github.com/itzmeanjan/merklize-sha/blob/75dfd47/example/keccak_256.cpp)
+- [KECCAK-256](https://github.com/itzmeanjan/merklize-sha/blob/fb41136/example/keccak_256.cpp)
 
 where two digests of respective hash functions are input, in byte concatenated form, to `hash( ... )` function, consider taking a look at above hyperlinked examples.
 
